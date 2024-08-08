@@ -1,6 +1,3 @@
-# set working directory
-setwd("~/BIOL 499/Defining Refugia/Supplemental Information")
-
 # import dataset and prepare for graphing
 pollen <- read.csv("Table S4.csv")
 pollen$Time.Bin <- pollen$Time.Bin/1000
