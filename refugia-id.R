@@ -1,5 +1,5 @@
 # import dataset and prepare for graphing
-pollen <- read.csv("Table S4.csv")
+pollen <- read.csv("IncidenceThroughTime.csv")
 pollen$Time.Bin <- pollen$Time.Bin/1000
 
 ### FIGURES ###
