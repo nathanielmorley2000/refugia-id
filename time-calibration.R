@@ -85,16 +85,17 @@ radiocarbon_data$calibrated_age <- ifelse(
   predicted_ages # Use model-predicted age for estimated depths
 )
 
-age = ifelse(all_depths %in% known_depths, ages[match(all_depths, known_depths)], NA),
+age = ifelse(all_depths %in% known_depths, ages[match(all_depths, known_depths)], NA)
 
 
 
 
 
+loc1503_geochron <-  neotoma2::get_sites(datasetid = 8257)
 
-
-
-
+View(loc1503_geochron$samples)
+geochron_dl <- neotoma2::get_downloads(loc1503_geochron)
+geochron<-geochron_dl@sites[["site"]]@collunits@collunits[[1]]@chronologies@chronologies[[1]]@chroncontrols
 
 
 
