@@ -56,6 +56,27 @@ loc_test <- neotomaGeochron(site_ids = c(10537, 10539, 513, 2271, 10538, 1396, 1
                                          2270, 1973, 2245, 1977, 10102, 1955, 207, 2232, 1699, 1503,
                                          1355, 2551, 13690, 11575, 11579, 11583, 846))
 
+# manually call geochronologic controls for Site 11583 (different formatting)
+neotomaManual <- function(site_id){
+
+  geochron <- neotoma2::get_datasets(siteid = site_id, all_data = TRUE) %>%
+    neotoma2::get_downloads()
+  geo_controls<-geochron_dl@sites[["site"]]@collunits@collunits[[1]]@chronologies@chronologies[[1]]@chroncontrols
+  
+  # Store the results
+  if (!is.null(geo_controls)) {
+    geo_controls <- as.data.frame(geo_controls)
+    geo_controls <- cbind(siteid = site_id, geo_controls)  # Add siteid as the first column
+    geochronologic_data[[length(geochronologic_data) + 1]] <- geo_controls
+  }
+  
+}
+
+loc11583_test <- neotomaManual(site_id = 11583)
+
+
+
+
 loc1503_geochron <-  neotoma2::get_sites(sitetid = 9701)
 
 View(loc1503_geochron$samples)
