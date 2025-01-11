@@ -60,7 +60,7 @@ loc_controls <- neotomaGeochron(site_ids = c(10537, 10539, 513, 2271, 10538, 139
 # manually call geochronologic controls for Site 11583 (different formatting)
 geochron11583 <- neotoma2::get_datasets(siteid = 11583, all_data = TRUE) %>%
   neotoma2::get_downloads()
- geo_controls11583 <- geochron@sites[["site"]]@collunits@collunits[[1]]@chronologies@chronologies[[1]]@chroncontrols
+ geo_controls11583 <- geochron11583@sites[["site"]]@collunits@collunits[[1]]@chronologies@chronologies[[1]]@chroncontrols
 geo_controls11583
 # since Site 11583 is dated using stratigraphy, we will exclude it from the calibration
 
@@ -69,14 +69,11 @@ radiocarbon_sites <- unique(loc_controls$siteid[loc_controls$chroncontroltype ==
 filtered_controls <- loc_controls %>%
   dplyr::filter(siteid %in% radiocarbon_sites & (chroncontroltype == "Radiocarbon" | chroncontroltype == "Core top"))
 
+# save a csv file for easy recall
+write.csv(filtered_controls, "radiocarbonControl.csv", row.names = FALSE)
 
 
-# load libraries
-library("neotoma2")
-library("Bchron")
-library("tidyr")
-library("dplyr")
-
+# function to pull pollen data from Neotoma database
 neotomaPollen <- function(site_ids, taxa) {
   
   # create a list to store the results
