@@ -1,6 +1,7 @@
 # load libraries
 library("neotoma2")
 library("Bchron")
+library("tidyr")
 library("dplyr")
 
 # create a function that calls the geochronologic controls for each of the sites in the Neotoma database
@@ -67,6 +68,89 @@ geo_controls11583
 radiocarbon_sites <- unique(loc_controls$siteid[loc_controls$chroncontroltype == "Radiocarbon"])
 filtered_controls <- loc_controls %>%
   dplyr::filter(siteid %in% radiocarbon_sites & (chroncontroltype == "Radiocarbon" | chroncontroltype == "Core top"))
+
+
+
+# load libraries
+library("neotoma2")
+library("Bchron")
+library("tidyr")
+library("dplyr")
+
+neotomaPollen <- function(site_ids, taxa) {
+  
+  # create a list to store the results
+  pollen_data <- list()
+  index <- 1
+  
+  # Loop through the site IDs
+  for (site_id in site_ids) {
+  
+      site <- neotoma2::get_sites(siteid = site_id)
+  
+        # find pollen data for site
+        site_pollen <- neotoma2::get_datasets(site, all_data = TRUE) %>%
+          neotoma2::filter(datasettype == "pollen") %>%
+          get_downloads()
+        allSamp = samples(site_pollen)
+        
+        for (taxon in taxa) {
+          # harmonize taxa based on user input
+          allSamp = allSamp %>% 
+            dplyr::filter(ecologicalgroup %in% c("TRSH")) %>% 
+            mutate(variablename = replace(variablename, 
+                                          stringr::str_detect(variablename, taxon), 
+                                          taxon))
+          
+          # create a function to check and add the specific taxon if not present
+          ensure_taxon_present <- function(df, taxon) {
+            if (!(taxon %in% df$variablename)) {
+              df <- bind_rows(df, data.frame(sitename = df$sitename[1], lat = df$lat[1], long = df$long[1], siteid = df$siteid[1], datasetid = df$datasetid[1], age = df$age[1], variablename = taxon, value = 0))
+            }
+            return(df)
+          }
+          
+          # Apply the function to each group
+          allSamp0 = allSamp %>%
+            group_by(sitename, lat, long, siteid, datasetid, age, variablename) %>%
+            summarize(value = sum(value), .groups = "keep") %>%
+            group_by(sitename, lat, long, siteid, datasetid, age) %>%
+            do(ensure_taxon_present(., taxon)) %>%
+            ungroup() %>%
+            dplyr::filter(variablename == taxon) %>%
+            select(sitename, lat, long, siteid, datasetid, value, age, variablename)
+        
+          # Append the result to the list
+          if (!is.null(allSamp0)) {
+            pollen_data[[index]] <- allSamp0
+            index <- index + 1
+          }
+        }
+  }
+
+  # Combine all results after both loops
+  combined_pollen_data <- bind_rows(pollen_data)
+}
+
+loc_pollen <- neotomaPollen(site_ids = c(10537, 10539, 513, 2271, 10538, 1396, 1748, 790, 992,  1974, 
+                                         2270, 1973, 2245, 1977, 10102, 1955, 207, 2232, 1699, 1503,
+                                         1355, 2551, 13690, 11575, 11579, 11583, 846),
+                            taxa = c("Salix", "Populus", "Picea"))
+  
+
+# Assuming `combined_pollen_data` is your dataframe
+pollen_wide <- loc_pollen %>%
+  pivot_wider(
+    names_from = variablename,  # Column to use for new column names
+    values_from = value         # Column to use for values in the new columns
+  )
+
+# save as a .csv file for easy recall
+write.csv(pollen_wide, "pollen_wide.csv", row.names= FALSE)
+
+
+# Combine all geochronologic controls into a single data frame if needed
+#combined_pollen_data <- do.call(rbind, lapply(pollen_data, as.data.frame))
 
 
 
