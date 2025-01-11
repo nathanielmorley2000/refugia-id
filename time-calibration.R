@@ -52,27 +52,22 @@ neotomaGeochron <- function(site_ids) {
   combined_geo_data <- do.call(rbind, lapply(geochronologic_data, as.data.frame))
 }
 
-loc_test <- neotomaGeochron(site_ids = c(10537, 10539, 513, 2271, 10538, 1396, 1748, 790, 992,  1974, 
+loc_controls <- neotomaGeochron(site_ids = c(10537, 10539, 513, 2271, 10538, 1396, 1748, 790, 992,  1974, 
                                          2270, 1973, 2245, 1977, 10102, 1955, 207, 2232, 1699, 1503,
                                          1355, 2551, 13690, 11575, 11579, 11583, 846))
 
 # manually call geochronologic controls for Site 11583 (different formatting)
-neotomaManual <- function(site_id){
+geochron11583 <- neotoma2::get_datasets(siteid = 11583, all_data = TRUE) %>%
+  neotoma2::get_downloads()
+ geo_controls11583 <- geochron@sites[["site"]]@collunits@collunits[[1]]@chronologies@chronologies[[1]]@chroncontrols
+geo_controls11583
+# since Site 11583 is dated using stratigraphy, we will exclude it from the calibration
 
-  geochron <- neotoma2::get_datasets(siteid = site_id, all_data = TRUE) %>%
-    neotoma2::get_downloads()
-  geo_controls<-geochron_dl@sites[["site"]]@collunits@collunits[[1]]@chronologies@chronologies[[1]]@chroncontrols
-  
-  # Store the results
-  if (!is.null(geo_controls)) {
-    geo_controls <- as.data.frame(geo_controls)
-    geo_controls <- cbind(siteid = site_id, geo_controls)  # Add siteid as the first column
-    geochronologic_data[[length(geochronologic_data) + 1]] <- geo_controls
-  }
-  
-}
+# filter dataset to only include cores that are dated using radiocarbon dates
+radiocarbon_sites <- unique(loc_controls$siteid[loc_controls$chroncontroltype == "Radiocarbon"])
+filtered_controls <- loc_controls %>%
+  dplyr::filter(siteid %in% radiocarbon_sites & (chroncontroltype == "Radiocarbon" | chroncontroltype == "Core top"))
 
-loc11583_test <- neotomaManual(site_id = 11583)
 
 
 
