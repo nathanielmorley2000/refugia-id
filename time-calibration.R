@@ -4,6 +4,12 @@ library("Bchron")
 library("tidyr")
 library("dplyr")
 
+# create directory for temporary files, if not already created
+dir.create("TempFiles")
+
+# create directory for results, if not already created
+dir.create("Results")
+
 # create a function that calls the geochronologic controls for each of the sites in the Neotoma database
 neotomaGeochron <- function(site_ids) {
   
@@ -69,8 +75,8 @@ radiocarbon_sites <- unique(loc_controls$siteid[loc_controls$chroncontroltype ==
 filtered_controls <- loc_controls %>%
   dplyr::filter(siteid %in% radiocarbon_sites & (chroncontroltype == "Radiocarbon" | chroncontroltype == "Core top"))
 
-# save a csv file for easy recall
-write.csv(filtered_controls, "radiocarbonControl.csv", row.names = FALSE)
+# save dataframe as a .csv file for easy recall
+write.csv(filtered_controls, "TempFiles/radiocarbonControl.csv", row.names = FALSE)
 
 
 # function to pull pollen data from Neotoma database
@@ -141,8 +147,8 @@ pollen_wide <- loc_pollen %>%
     values_from = value         
   )
 
-# save as a .csv file for easy recall
-write.csv(pollen_wide, "pollen_wide.csv", row.names= FALSE)
+# save dataframes as a .csv file for easy recall
+write.csv(pollen_wide, "TempFiles/pollen_wide.csv", row.names= FALSE)
 
 
 
@@ -155,9 +161,9 @@ library("Bchron")
 library("tidyr")
 library("dplyr")
 
-# read variables from .csv file
-filtered_controls <- read.csv("radiocarbonControl.csv")
-pollen_wide <- read.csv("pollen_wide.csv")
+# if needed, read radiometric controls and pollen data from temporary .csv files
+filtered_controls <- read.csv("TempFiles/radiocarbonControl.csv")
+pollen_wide <- read.csv("TempFiles/pollen_wide.csv")
 
 # create a new column in filtered_controls called age_sd
 filtered_controls$age_sd <- (filtered_controls$agelimitolder - filtered_controls$agelimityounger)/2
@@ -176,9 +182,8 @@ output_df <- pollen_wide[0, ] # Empty dataframe with the same columns as pollen_
 
 # Loop through each siteid
 for (site in unique(pollen_wide$siteid)) {
-  
-  site = 10537
-  
+
+  #site = 10537
   site_controls <- filtered_controls[filtered_controls$siteid == site, ]
   site_depths <- pollen_wide[pollen_wide$siteid == site, ]
   
@@ -197,36 +202,15 @@ for (site in unique(pollen_wide$siteid)) {
       positions = radiocarbon_controls$depth,
       calCurves = radiocarbon_controls$cal_curve
     )
-    
-    
-    
 
-    
-
-    
-
-    
-    
-    
-    
-    
-    # Check that the depths in site_depths match the newPositions
-    if (all(site_depths$depth %in% model$positions)) {
       # Predict ages for all depths
-      calibrated_dates <- data.frame(predict(model, newPositions = site_depths$depth))
+      calibrated_dates <- data.frame(predict(age_depth_model, newPositions = site_depths$depth))
       median_predicted_ages <- apply(calibrated_dates, 2, median, na.rm = TRUE)
-      
-      
-      
-      
       site_depths$calibrated_age <- median_predicted_ages
-    } else {
-      warning("Some depths in site_depths do not match the model positions for siteid: ", site)
-      site_depths$calibrated_age <- NA
-    }
+ 
   } else {
     # Use default ages if no radiocarbon controls exist
-    site_depths$calibrated_age <- site_depths$default_age
+    site_depths$calibrated_age <- site_depths$age
   }
   
   # Append core tops back into the result with fixed ages
@@ -245,12 +229,44 @@ for (site in unique(pollen_wide$siteid)) {
 # View the final output
 print(output_df)
 
+output_df <- output_df %>%
+  relocate(age, .after = calibrated_age)
 
+write.csv(output_df, "calibratedDates.csv", row.names = FALSE)
 
+timeBin = 500
+taxon = "Picea"
+samplingProtocol = "Minimum"
+yearMin = 0
+yearMax = 20000
 
+output_df <- read.csv("calibratedDates.csv")
 
+# create 500-yr time bins as a separate column
+timeCorrected = output_df %>%
+  dplyr::filter(age >= 0) %>%
+  mutate(Year_Bin = floor(calibrated_age / timeBin) * timeBin)
 
+# filter to look at one taxon
+timeCorrected = timeCorrected %>%
+  select(sitename, lat, long, siteid, datasetid, depth, all_of(taxon), calibrated_age, Year_Bin) %>%
+  rename(value = taxon)
 
+data_filtered = timeCorrected %>%
+  group_by(sitename, Year_Bin) %>%
+  slice_min(order_by = value, with_ties = FALSE) %>%
+  ungroup() %>%
+  dplyr::filter(Year_Bin >= yearMin) %>%
+  dplyr::filter(Year_Bin <= yearMax)
+
+# creates pivot table with correctly ordered time bins
+ordered_years = sort(unique(data_filtered$Year_Bin))
+pivot_table = data_filtered %>%
+  select(sitename, siteid, datasetid, lat, long, Year_Bin, value) %>%
+  pivot_wider(names_from = Year_Bin, values_from = value, values_fill = list(Taxon_Abundance = NA)) %>%
+  select(sitename, siteid, datasetid, lat, long, all_of(as.character(ordered_years)))
+
+write.csv(pivot_table, "pivottable.csv", row.names = FALSE)
 
 
 all_depths <- as.numeric(pollen_Samp$depth)
@@ -294,7 +310,7 @@ for (i in 1:length(calibrated_dates)) {
   print(paste("Median calibrated age for Date", i, ":", median_calibrated_age))
 }
 
-# Fit the age-depth model
+# Fit the age-depth age_depth_model
 age_depth_model <- Bchronology(
   ages = known_dates$age,
   ageSds = known_dates$error,
