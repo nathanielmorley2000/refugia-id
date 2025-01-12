@@ -10,6 +10,10 @@ dir.create("TempFiles")
 # create directory for results, if not already created
 dir.create("Results")
 
+###################################################################################
+############################## CALL RADIOMETRIC DATA ############################## 
+###################################################################################
+
 # create a function that calls the geochronologic controls for each of the sites in the Neotoma database
 neotomaGeochron <- function(site_ids) {
   
@@ -78,7 +82,15 @@ filtered_controls <- loc_controls %>%
 # save dataframe as a .csv file for easy recall
 write.csv(filtered_controls, "TempFiles/radiocarbonControl.csv", row.names = FALSE)
 
+###################################################################################
+###################################################################################
+###################################################################################
 
+
+
+##############################################################################
+############################## CALL POLLEN DATA ##############################
+##############################################################################
 # function to pull pollen data from Neotoma database
 neotomaPollen <- function(site_ids, taxa) {
   
@@ -147,13 +159,17 @@ pollen_wide <- loc_pollen %>%
     values_from = value         
   )
 
-# save dataframes as a .csv file for easy recall
+# save dataframe as a .csv file for easy recall
 write.csv(pollen_wide, "TempFiles/pollen_wide.csv", row.names= FALSE)
 
+##############################################################################
+##############################################################################
+##############################################################################
 
 
-# calibrate dates
-
+#############################################################################
+############################## CALIBRATE DATES ############################## 
+#############################################################################
 
 # load libraries
 library("neotoma2")
@@ -165,74 +181,83 @@ library("dplyr")
 filtered_controls <- read.csv("TempFiles/radiocarbonControl.csv")
 pollen_wide <- read.csv("TempFiles/pollen_wide.csv")
 
-# create a new column in filtered_controls called age_sd
-filtered_controls$age_sd <- (filtered_controls$agelimitolder - filtered_controls$agelimityounger)/2
-# Handle NA age_sd values for core tops (set to 10 years or another reasonable value)
-filtered_controls$age_sd[is.na(filtered_controls$age_sd)] <- 10  # For example, 10 years uncertainty for core tops
-
-
-
-
-
-# Automatically assign calibration curves for radiocarbon dates
-filtered_controls$cal_curve <- ifelse(filtered_controls$chroncontroltype == "Radiocarbon", "intcal20", NA)
-
-# Initialize output dataframe with the same structure as pollen_wide
-output_df <- pollen_wide[0, ] # Empty dataframe with the same columns as pollen_wide
-
-# Loop through each siteid
-for (site in unique(pollen_wide$siteid)) {
-
-  #site = 10537
-  site_controls <- filtered_controls[filtered_controls$siteid == site, ]
-  site_depths <- pollen_wide[pollen_wide$siteid == site, ]
+# create function for creating age-depth model for each site and calibrating dates
+calibrateDates <- function(filtered_controls, pollen_wide){
+  # create a new column in filtered_controls called age_sd
+  filtered_controls$age_sd <- (filtered_controls$agelimitolder - filtered_controls$agelimityounger)/2
   
-  # Ensure `calibrated_age` column exists in site_depths
-  site_depths$calibrated_age <- NA
+  # Handle NA age_sd values for core tops (set to 10 years or another reasonable value)
+  #filtered_controls$age_sd[is.na(filtered_controls$age_sd)] <- 10  # For example, 10 years uncertainty for core tops
   
-  # Separate core tops and radiocarbon controls
-  radiocarbon_controls <- site_controls[!is.na(site_controls$cal_curve), ]
-  core_tops <- site_controls[is.na(site_controls$cal_curve), ]
+  # Automatically assign calibration curves for radiocarbon dates
+  filtered_controls$cal_curve <- ifelse(filtered_controls$chroncontroltype == "Radiocarbon", "intcal20", NA)
   
-  # Create the age-depth model only if there are radiocarbon controls
-  if (nrow(radiocarbon_controls) > 0) {
-    age_depth_model <- Bchronology(
-      ages = radiocarbon_controls$chroncontrolage,
-      ageSds = radiocarbon_controls$age_sd,
-      positions = radiocarbon_controls$depth,
-      calCurves = radiocarbon_controls$cal_curve
-    )
-
+  # Initialize output dataframe with the same structure as pollen_wide
+  output_df <- pollen_wide[0, ] # Empty dataframe with the same columns as pollen_wide
+  
+  # Loop through each siteid
+  for (site in unique(pollen_wide$siteid)) {
+    
+    site = 10537
+    site_controls <- filtered_controls[filtered_controls$siteid == site, ]
+    site_depths <- pollen_wide[pollen_wide$siteid == site, ]
+    
+    # Ensure `calibrated_age` column exists in site_depths
+    site_depths$calibrated_age <- NA
+    
+    # Separate core tops and radiocarbon controls
+    radiocarbon_controls <- site_controls[!is.na(site_controls$cal_curve), ]
+    core_tops <- site_controls[is.na(site_controls$cal_curve), ]
+    
+    # Create the age-depth model only if there are radiocarbon controls
+    if (nrow(radiocarbon_controls) > 0) {
+      age_depth_model <- Bchronology(
+        ages = radiocarbon_controls$chroncontrolage,
+        ageSds = radiocarbon_controls$age_sd,
+        positions = radiocarbon_controls$depth,
+        positionThicknesses = radiocarbon_controls$thickness,
+        calCurves = radiocarbon_controls$cal_curve
+      )
+      
       # Predict ages for all depths
       calibrated_dates <- data.frame(predict(age_depth_model, newPositions = site_depths$depth))
       median_predicted_ages <- apply(calibrated_dates, 2, median, na.rm = TRUE)
       site_depths$calibrated_age <- median_predicted_ages
- 
-  } else {
-    # Use default ages if no radiocarbon controls exist
-    site_depths$calibrated_age <- site_depths$age
-  }
-  
-  # Append core tops back into the result with fixed ages
-  if (nrow(core_tops) > 0) {
-    for (i in 1:nrow(core_tops)) {
-      depth <- core_tops$depth[i]
-      age <- core_tops$chroncontrolage[i]
-      site_depths$calibrated_age[site_depths$depth == depth] <- age
+      
+    } else {
+      # Use default ages if no radiocarbon controls exist
+      site_depths$calibrated_age <- site_depths$age
     }
+    
+    # Append core tops back into the result with fixed ages
+    if (nrow(core_tops) > 0) {
+      for (i in 1:nrow(core_tops)) {
+        depth <- core_tops$depth[i]
+        age <- core_tops$chroncontrolage[i]
+        site_depths$calibrated_age[site_depths$depth == depth] <- age
+      }
+    }
+    
+    # Bind the updated site_depths to the output dataframe
+    output_df <- rbind(output_df, site_depths)
   }
-  
-  # Bind the updated site_depths to the output dataframe
-  output_df <- rbind(output_df, site_depths)
 }
 
-# View the final output
-print(output_df)
+# call the calibration function
+output_df <- calibrateDates(filtered_controls, pollen_wide)
 
+# move radiometric age ("age") after calibrated age for easier comparison
 output_df <- output_df %>%
   relocate(age, .after = calibrated_age)
 
-write.csv(output_df, "calibratedDates.csv", row.names = FALSE)
+# # save dataframe as a .csv file for easy recall
+write.csv(output_df, "TempFiles/calibratedDates.csv", row.names = FALSE)
+
+#############################################################################
+#############################################################################
+#############################################################################
+
+
 
 timeBin = 500
 taxon = "Picea"
@@ -240,7 +265,8 @@ samplingProtocol = "Minimum"
 yearMin = 0
 yearMax = 20000
 
-output_df <- read.csv("calibratedDates.csv")
+# if needed, read calibrated radiometric data from temporary .csv files
+output_df <- read.csv("TempFiles/calibratedDates.csv")
 
 # create 500-yr time bins as a separate column
 timeCorrected = output_df %>%
