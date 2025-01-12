@@ -102,20 +102,20 @@ neotomaPollen <- function(site_ids, taxa) {
           # create a function to check and add the specific taxon if not present
           ensure_taxon_present <- function(df, taxon) {
             if (!(taxon %in% df$variablename)) {
-              df <- bind_rows(df, data.frame(sitename = df$sitename[1], lat = df$lat[1], long = df$long[1], siteid = df$siteid[1], datasetid = df$datasetid[1], age = df$age[1], variablename = taxon, value = 0))
+              df <- bind_rows(df, data.frame(sitename = df$sitename[1], lat = df$lat[1], long = df$long[1], siteid = df$siteid[1], datasetid = df$datasetid[1], age = df$age[1], variablename = taxon, value = 0, depth = df$depth[1]))
             }
             return(df)
           }
           
           # Apply the function to each group
           allSamp0 = allSamp %>%
-            group_by(sitename, lat, long, siteid, datasetid, age, variablename) %>%
+            group_by(sitename, lat, long, siteid, datasetid, age, variablename, depth) %>%
             summarize(value = sum(value), .groups = "keep") %>%
-            group_by(sitename, lat, long, siteid, datasetid, age) %>%
+            group_by(sitename, lat, long, siteid, datasetid, age, depth) %>%
             do(ensure_taxon_present(., taxon)) %>%
             ungroup() %>%
             dplyr::filter(variablename == taxon) %>%
-            select(sitename, lat, long, siteid, datasetid, value, age, variablename)
+            select(sitename, lat, long, siteid, datasetid, value, age, variablename, depth)
         
           # Append the result to the list
           if (!is.null(allSamp0)) {
@@ -134,61 +134,123 @@ loc_pollen <- neotomaPollen(site_ids = c(10537, 10539, 513, 2271, 10538, 1396, 1
                                          1355, 2551, 13690, 11575, 11579, 11583, 846),
                             taxa = c("Salix", "Populus", "Picea"))
   
-
-# Assuming `combined_pollen_data` is your dataframe
+# pivot table to display each taxon as a separate column
 pollen_wide <- loc_pollen %>%
   pivot_wider(
-    names_from = variablename,  # Column to use for new column names
-    values_from = value         # Column to use for values in the new columns
+    names_from = variablename, 
+    values_from = value         
   )
 
 # save as a .csv file for easy recall
 write.csv(pollen_wide, "pollen_wide.csv", row.names= FALSE)
 
 
-# Combine all geochronologic controls into a single data frame if needed
-#combined_pollen_data <- do.call(rbind, lapply(pollen_data, as.data.frame))
+
+# calibrate dates
+
+
+# load libraries
+library("neotoma2")
+library("Bchron")
+library("tidyr")
+library("dplyr")
+
+# read variables from .csv file
+filtered_controls <- read.csv("radiocarbonControl.csv")
+pollen_wide <- read.csv("pollen_wide.csv")
+
+# create a new column in filtered_controls called age_sd
+filtered_controls$age_sd <- (filtered_controls$agelimitolder - filtered_controls$agelimityounger)/2
+# Handle NA age_sd values for core tops (set to 10 years or another reasonable value)
+filtered_controls$age_sd[is.na(filtered_controls$age_sd)] <- 10  # For example, 10 years uncertainty for core tops
 
 
 
 
 
-loc1503_geochron <-  neotoma2::get_sites(sitetid = 9701)
+# Automatically assign calibration curves for radiocarbon dates
+filtered_controls$cal_curve <- ifelse(filtered_controls$chroncontroltype == "Radiocarbon", "intcal20", NA)
 
-View(loc1503_geochron$samples)
-geochron_dl <- neotoma2::get_downloads(loc1503_geochron)
+# Initialize output dataframe with the same structure as pollen_wide
+output_df <- pollen_wide[0, ] # Empty dataframe with the same columns as pollen_wide
+
+# Loop through each siteid
+for (site in unique(pollen_wide$siteid)) {
+  
+  site = 10537
+  
+  site_controls <- filtered_controls[filtered_controls$siteid == site, ]
+  site_depths <- pollen_wide[pollen_wide$siteid == site, ]
+  
+  # Ensure `calibrated_age` column exists in site_depths
+  site_depths$calibrated_age <- NA
+  
+  # Separate core tops and radiocarbon controls
+  radiocarbon_controls <- site_controls[!is.na(site_controls$cal_curve), ]
+  core_tops <- site_controls[is.na(site_controls$cal_curve), ]
+  
+  # Create the age-depth model only if there are radiocarbon controls
+  if (nrow(radiocarbon_controls) > 0) {
+    age_depth_model <- Bchronology(
+      ages = radiocarbon_controls$chroncontrolage,
+      ageSds = radiocarbon_controls$age_sd,
+      positions = radiocarbon_controls$depth,
+      calCurves = radiocarbon_controls$cal_curve
+    )
+    
+    
+    
+
+    
+
+    
+
+    
+    
+    
+    
+    
+    # Check that the depths in site_depths match the newPositions
+    if (all(site_depths$depth %in% model$positions)) {
+      # Predict ages for all depths
+      calibrated_dates <- data.frame(predict(model, newPositions = site_depths$depth))
+      median_predicted_ages <- apply(calibrated_dates, 2, median, na.rm = TRUE)
+      
+      
+      
+      
+      site_depths$calibrated_age <- median_predicted_ages
+    } else {
+      warning("Some depths in site_depths do not match the model positions for siteid: ", site)
+      site_depths$calibrated_age <- NA
+    }
+  } else {
+    # Use default ages if no radiocarbon controls exist
+    site_depths$calibrated_age <- site_depths$default_age
+  }
+  
+  # Append core tops back into the result with fixed ages
+  if (nrow(core_tops) > 0) {
+    for (i in 1:nrow(core_tops)) {
+      depth <- core_tops$depth[i]
+      age <- core_tops$chroncontrolage[i]
+      site_depths$calibrated_age[site_depths$depth == depth] <- age
+    }
+  }
+  
+  # Bind the updated site_depths to the output dataframe
+  output_df <- rbind(output_df, site_depths)
+}
+
+# View the final output
+print(output_df)
 
 
-loc11583 <- neotoma2::get_sites(siteid = 11583) %>% 
-  get_downloads()
-
-
-loc11583_geochron <- neotoma2::get_datasets(loc11583, all_data = TRUE) %>%
-  neotoma2::filter(datasettype == "geochronologic")
-geochron_dl <- loc11583_geochron %>%
-  get_downloads()
-geochron<-geochron_dl@sites[["site"]]@collunits@collunits[[1]]@chronologies@chronologies[[1]]@chroncontrols
 
 
 
 
-loc1503_pollen <- neotoma2::get_datasets(loc1503, all_data = TRUE) %>%
-  neotoma2::filter(datasettype == "pollen")
 
-
-pollen_dl <- loc1503_pollen %>%
-  get_downloads()
-
-
-
-pollen_Samp <- samples(pollen_dl) %>%
-  group_by(sitename, lat, long, siteid, datasetid, depth, age, variablename) %>%
-  summarize(value = sum(value), .groups = "keep") %>%
-  group_by(sitename, lat, long, siteid, datasetid, depth, age) %>%
-  #do(ensure_taxon_present(., taxon)) %>%
-  ungroup() %>%
-  dplyr::filter(variablename == "Picea") %>%
-  dplyr::select(sitename, lat, long, siteid, datasetid, value, depth, age)
 
 
 all_depths <- as.numeric(pollen_Samp$depth)
