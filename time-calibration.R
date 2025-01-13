@@ -4,7 +4,7 @@ library("Bchron")
 library("tidyr")
 library("dplyr")
 
-# create directories
+# create directories to store outputs
 dir.create("TempFiles") # for temporary files
 dir.create("IndividualSummaries") # for time calibrated summary tables
 dir.create("Results") # for results to be used in paper or supplement
