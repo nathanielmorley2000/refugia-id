@@ -91,6 +91,7 @@ write.csv(filtered_controls, "TempFiles/radiocarbonControl.csv", row.names = FAL
 ##############################################################################
 ############################## CALL POLLEN DATA ##############################
 ##############################################################################
+
 # function to pull pollen data from Neotoma database
 neotomaPollen <- function(site_ids, taxa) {
   
@@ -167,6 +168,7 @@ write.csv(pollen_wide, "TempFiles/pollen_wide.csv", row.names= FALSE)
 ##############################################################################
 
 
+
 #############################################################################
 ############################## CALIBRATE DATES ############################## 
 #############################################################################
@@ -187,7 +189,7 @@ calibrateDates <- function(filtered_controls, pollen_wide){
   filtered_controls$age_sd <- (filtered_controls$agelimitolder - filtered_controls$agelimityounger)/2
   
   # Handle NA age_sd values for core tops (set to 10 years or another reasonable value)
-  #filtered_controls$age_sd[is.na(filtered_controls$age_sd)] <- 10  # For example, 10 years uncertainty for core tops
+  filtered_controls$age_sd[is.na(filtered_controls$age_sd)] <- 10  # For example, 10 years uncertainty for core tops
   
   # Automatically assign calibration curves for radiocarbon dates
   filtered_controls$cal_curve <- ifelse(filtered_controls$chroncontroltype == "Radiocarbon", "intcal20", NA)
@@ -198,7 +200,6 @@ calibrateDates <- function(filtered_controls, pollen_wide){
   # Loop through each siteid
   for (site in unique(pollen_wide$siteid)) {
     
-    site = 10537
     site_controls <- filtered_controls[filtered_controls$siteid == site, ]
     site_depths <- pollen_wide[pollen_wide$siteid == site, ]
     
@@ -241,6 +242,8 @@ calibrateDates <- function(filtered_controls, pollen_wide){
     # Bind the updated site_depths to the output dataframe
     output_df <- rbind(output_df, site_depths)
   }
+  
+  return(output_df)
 }
 
 # call the calibration function
@@ -259,6 +262,9 @@ write.csv(output_df, "TempFiles/calibratedDates.csv", row.names = FALSE)
 
 
 
+###################################################################################
+############################## BIN AND ORGANIZE DATA ##############################
+###################################################################################
 timeBin = 500
 taxon = "Picea"
 samplingProtocol = "Minimum"
@@ -268,31 +274,65 @@ yearMax = 20000
 # if needed, read calibrated radiometric data from temporary .csv files
 output_df <- read.csv("TempFiles/calibratedDates.csv")
 
-# create 500-yr time bins as a separate column
-timeCorrected = output_df %>%
-  dplyr::filter(age >= 0) %>%
-  mutate(Year_Bin = floor(calibrated_age / timeBin) * timeBin)
+# create function for organizing data into time bins
+organizeData <- function(timeBin, taxon, samplingProtocol, yearMin, yearMax) {
+  # create 500-yr time bins as a separate column
+  timeCorrected = output_df %>%
+    dplyr::filter(age >= 0) %>%
+    mutate(Year_Bin = floor(calibrated_age / timeBin) * timeBin)
+  
+  # filter to look at one taxon
+  timeCorrected = timeCorrected %>%
+    select(sitename, lat, long, siteid, datasetid, depth, all_of(taxon), calibrated_age, Year_Bin) %>%
+    rename(value = taxon)
+  
+  data_filtered = timeCorrected %>%
+    group_by(sitename, Year_Bin) %>%
+    slice_min(order_by = value, with_ties = FALSE) %>%
+    ungroup() %>%
+    dplyr::filter(Year_Bin >= yearMin) %>%
+    dplyr::filter(Year_Bin <= yearMax)
+  
+  # creates pivot table with correctly ordered time bins
+  ordered_years = sort(unique(data_filtered$Year_Bin))
+  pivot_table = data_filtered %>%
+    select(sitename, siteid, datasetid, lat, long, Year_Bin, value) %>%
+    pivot_wider(names_from = Year_Bin, values_from = value, values_fill = list(Taxon_Abundance = NA)) %>%
+    select(sitename, siteid, datasetid, lat, long, all_of(as.character(ordered_years)))
+  
+  # return pivot table
+  return(pivot_table)
+}
 
-# filter to look at one taxon
-timeCorrected = timeCorrected %>%
-  select(sitename, lat, long, siteid, datasetid, depth, all_of(taxon), calibrated_age, Year_Bin) %>%
-  rename(value = taxon)
-
-data_filtered = timeCorrected %>%
-  group_by(sitename, Year_Bin) %>%
-  slice_min(order_by = value, with_ties = FALSE) %>%
-  ungroup() %>%
-  dplyr::filter(Year_Bin >= yearMin) %>%
-  dplyr::filter(Year_Bin <= yearMax)
-
-# creates pivot table with correctly ordered time bins
-ordered_years = sort(unique(data_filtered$Year_Bin))
-pivot_table = data_filtered %>%
-  select(sitename, siteid, datasetid, lat, long, Year_Bin, value) %>%
-  pivot_wider(names_from = Year_Bin, values_from = value, values_fill = list(Taxon_Abundance = NA)) %>%
-  select(sitename, siteid, datasetid, lat, long, all_of(as.character(ordered_years)))
+PiceaMin <- organizeData(timeBin = 500,
+                         taxon = "Picea",
+                         samplingProtocol = "Minimum",
+                         yearMin = 0,
+                         yearMax = 20000)
 
 write.csv(pivot_table, "pivottable.csv", row.names = FALSE)
+
+###################################################################################
+###################################################################################
+###################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 all_depths <- as.numeric(pollen_Samp$depth)
