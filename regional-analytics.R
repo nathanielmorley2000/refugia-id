@@ -2,7 +2,11 @@
 pollen <- read.csv("TempFiles/PresenceThroughTime.csv")
 pollen$Time <- pollen$Time/1000
 
-### FIGURES ###
+
+#####################################################################
+############################## FIGURES ##############################
+#####################################################################
+
 # create function for summary plot
 plotPollen <- function(taxonMin, taxonMax, taxon, color) {
   # create plot and plot data availability
@@ -44,15 +48,15 @@ par(mfrow = c(2,2),
     mar = c(4.1, 4.4, 4.1, 1.9))
 
 # call individual plots
-plotPollen(pollen$SalixMin, pollen$SalixMax, "Willow", "red3")
-plotPollen(pollen$PopulusMin, pollen$PopulusMax, "Aspen", "deepskyblue2")
-plotPollen(pollen$PiceaMin, pollen$PiceaMax, "Spruce", "springgreen3")
+plotPollen(pollen$SalixMin, pollen$SalixMax, "Salix", "red3")
+plotPollen(pollen$PopulusMin, pollen$PopulusMax, "Populus", "deepskyblue2")
+plotPollen(pollen$PiceaMin, pollen$PiceaMax, "Picea", "springgreen3")
 
 # createlegend
 plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
 legend("center", legend=c("Localities with Data", "Onset of Holocene",
-                          "Willow (Maximum)", "Willow (Minimum)", "Aspen (Maximum)", "Aspen (Minimum)",
-                          "Spruce (Maximum)", "Spruce (Minimum)"),
+                          "Salix (Maximum)", "Salix (Minimum)", "Populus (Maximum)", "Populus (Minimum)",
+                          "Picea (Maximum)", "Picea (Minimum)"),
        col=c("black", "navy", "red3", "red3", "deepskyblue2", "deepskyblue2",  "springgreen3", "springgreen3"), 
        lty=c(1,3,1,2,1,2,1,2),
        lwd=c(3,3,2,2,2,2,2,2),
@@ -85,43 +89,55 @@ indiv.plot <- function(taxon, color){
 }
 
 # call functions
-# spruce
-svg('SpruceIndividual.svg', 
+# Picea
+svg('Results/PiceaIndividual.svg', 
     width = 10,
     height = 12,
     pointsize = 30)
 indiv.plot(pollen$PiceaMin, "springgreen3")
 dev.off()
 
-# poplar
-svg('PoplarIndividual.svg', 
+# Populus
+svg('Results/PopulusIndividual.svg', 
     width = 10,
     height = 12,
     pointsize = 30)
 indiv.plot(pollen$PopulusMin, "deepskyblue2")
 dev.off()
+#####################################################################
+#####################################################################
+#####################################################################
 
 
 
-### CORRELATION ###
-# willow maximum and minimum
-cor.willow <- cor.test(pollen$SalixMax, pollen$SalixMin, 
+#########################################################################
+############################## CORRELATION ##############################
+#########################################################################
+# Salix maximum and minimum
+cor.Salix <- cor.test(pollen$SalixMax, pollen$SalixMin, 
                 method = "spearman")
-cor.willow # rho = 0.98, p < 2.2e-16
+cor.Salix # rho = 0.99, p < 2.2e-16
 
-# aspen maximum and minimum
-cor.aspen <- cor.test(pollen$PopulusMax, pollen$PopulusMin, 
+# Populus maximum and minimum
+cor.Populus <- cor.test(pollen$PopulusMax, pollen$PopulusMin, 
                 method = "spearman")
-cor.aspen # rho = 0.95, p < 2.2e-16
+cor.Populus # rho = 0.89, p = 2.37e-15
 
-# spruce maximum and minimum
-cor.spruce <- cor.test(pollen$PiceaMax, pollen$PiceaMin, 
+# Picea maximum and minimum
+cor.Picea <- cor.test(pollen$PiceaMax, pollen$PiceaMin, 
                        method = "spearman")
-cor.spruce # rho = 0.97, p < 2.2e-16
+cor.Picea # rho = 0.98, p < 2.2e-16
+
+#########################################################################
+#########################################################################
+#########################################################################
 
 
 
-### SIGNIFICANCE OF SPRUCE PATTERN ###
+############################################################################################
+############################## SIGNIFICANCE OF Picea PATTERN ##############################
+############################################################################################
+
 # create function for Monte Carlo simultation (with replacement)
 monteCarlo <- function(entry, decline, duration, nit) {
   # set counters for simulation
@@ -166,3 +182,7 @@ monteCarlo <- function(entry, decline, duration, nit) {
 success <- monteCarlo(11, 5, 7, 100000)
 p <- success/100000
 p # p = 0.003
+
+############################################################################################
+############################################################################################
+############################################################################################
