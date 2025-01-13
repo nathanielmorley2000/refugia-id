@@ -173,12 +173,6 @@ write.csv(pollen_wide, "TempFiles/pollen_wide.csv", row.names= FALSE)
 ############################## CALIBRATE DATES ############################## 
 #############################################################################
 
-# load libraries
-library("neotoma2")
-library("Bchron")
-library("tidyr")
-library("dplyr")
-
 # if needed, read radiometric controls and pollen data from temporary .csv files
 filtered_controls <- read.csv("TempFiles/radiocarbonControl.csv")
 pollen_wide <- read.csv("TempFiles/pollen_wide.csv")
