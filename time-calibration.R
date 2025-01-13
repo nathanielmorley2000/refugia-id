@@ -304,7 +304,7 @@ PiceaMin <- organizeData(timeBin = 500,
                          yearMin = 0,
                          yearMax = 20000)
 
-write.csv(PiceaMin, "IndividualSummaries/PiceaMin", row.names = FALSE)
+write.csv(PiceaMin, "IndividualSummaries/PiceaMin.csv", row.names = FALSE)
 
 ###################################################################################
 ###################################################################################
