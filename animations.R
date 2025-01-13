@@ -133,4 +133,3 @@ generateGIF <- function(mapdata_name) {
 generateGIF("SalixMin")
 generateGIF("PopulusMin")
 generateGIF("PiceaMin")
-
