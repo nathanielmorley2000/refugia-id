@@ -259,12 +259,6 @@ write.csv(output_df, "TempFiles/calibratedDates.csv", row.names = FALSE)
 ############################## BIN AND ORGANIZE DATA ##############################
 ###################################################################################
 
-# load libraries
-library("neotoma2")
-library("Bchron")
-library("tidyr")
-library("dplyr")
-
 # if needed, read calibrated radiometric data from temporary .csv files
 output_df <- read.csv("TempFiles/calibratedDates.csv")
 
@@ -357,6 +351,69 @@ PiceaMax <- organizeData(timeBin = 500,
                          yearMin = 0,
                          yearMax = 20000)
 write.csv(PiceaMax, "IndividualSummaries/PiceaMax.csv", row.names = FALSE)
+
+# create function to produce regional summary for all taxa for presence through time
+regionalSummary <- function(dataframes) {
+  
+  # initialize empty dataframe to store output
+  all_summaries <- NULL
+  
+  # loop through each dataset
+  for(df_name in dataframes){
+    
+    # Dynamically get the dataframe from the global environment using `get()`
+    df <- get(df_name)
+    
+    # convert to long format for analysis
+    long_df <- df %>%
+      pivot_longer(
+        cols = "0":last_col(),
+        names_to = ("time"),
+        values_to = ("abundance")
+      )
+    
+    # summarize number of sites with values >0 per time bin
+    summary = long_df %>%
+      group_by(time) %>%
+      summarize(
+        localities_with_data = sum(!is.na(abundance)),
+        localities_with_pollen = sum(abundance > 0, na.rm = TRUE)
+      ) %>%
+      mutate(
+        time = as.numeric(time),
+        localities_with_data = as.numeric(localities_with_data),
+        localities_with_pollen = as.numeric(localities_with_pollen)
+      ) %>%
+      arrange(time)
+    
+    # If it's the first dataframe, initialize 'all_summaries'
+    if (is.null(all_summaries)) {
+      all_summaries <- data.frame(summary$localities_with_pollen)
+      colnames(all_summaries) <- df_name  # Name the column with the dataframe name
+    } else {
+      # Add the new column with the dataframe's name
+      all_summaries[[df_name]] <- summary$localities_with_pollen
+    }
+    
+  }
+  
+  # add columns for time and data availability to front of output dataframe
+  time = summary$time
+  AvailableData = summary$localities_with_data
+  all_summaries = cbind(time, AvailableData, all_summaries)
+  colnames(all_summaries)[1:2] = c("Time", "AvailableData")
+  
+  return(all_summaries)
+}
+
+# call function and save as .csv file in TempFiles
+presencethroughtime <- regionalSummary(dataframes = c("SalixMin", 
+                                                      "SalixMax", 
+                                                      "PopulusMin", 
+                                                      "PopulusMax", 
+                                                      "PiceaMin", 
+                                                      "PiceaMax"))
+write.csv(presencethroughtime, "TempFiles/PresenceThroughTime.csv", row.names = FALSE)
 
 ###################################################################################
 ###################################################################################
