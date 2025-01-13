@@ -1,13 +1,13 @@
 # import dataset and prepare for graphing
-pollen <- read.csv("IncidenceThroughTime.csv")
-pollen$Time.Bin <- pollen$Time.Bin/1000
+pollen <- read.csv("TempFiles/PresenceThroughTime.csv")
+pollen$Time <- pollen$Time/1000
 
 ### FIGURES ###
 # create function for summary plot
 plotPollen <- function(taxonMin, taxonMax, taxon, color) {
   # create plot and plot data availability
-  plot(pollen$Present.Localities, pollen$Time.Bin, 
-       ylim = rev(range(pollen$Time.Bin)), 
+  plot(pollen$AvailableData, pollen$Time, 
+       ylim = rev(range(pollen$Time)), 
        type = "l", 
        lty = 1,
        lwd = 3,
@@ -16,16 +16,16 @@ plotPollen <- function(taxonMin, taxonMax, taxon, color) {
        main = taxon)
   
   # plot maximum taxon
-  lines(taxonMax, pollen$Time.Bin,
-        ylim =rev(range(pollen$Time.Bin)),
+  lines(taxonMax, pollen$Time,
+        ylim =rev(range(pollen$Time)),
         type = "l",
         lty = 1,
         lwd = 2,
         col = color)
   
   # plot maximum taxon
-  lines(taxonMin, pollen$Time.Bin,
-        ylim =rev(range(pollen$Time.Bin)),
+  lines(taxonMin, pollen$Time,
+        ylim =rev(range(pollen$Time)),
         type = "l",
         lty = 2,
         lwd = 2,
@@ -34,7 +34,7 @@ plotPollen <- function(taxonMin, taxonMax, taxon, color) {
 }
 
 # direct software to save as .svg to local directory
-svg('Figure 3.svg', 
+svg('Results/Figure3.svg', 
     width = 32,
     height = 24,
     pointsize = 30)
@@ -44,9 +44,9 @@ par(mfrow = c(2,2),
     mar = c(4.1, 4.4, 4.1, 1.9))
 
 # call individual plots
-plotPollen(pollen$Willow.Minimum, pollen$Willow.Maximum, "Willow", "red3")
-plotPollen(pollen$Poplar.Minimum, pollen$Poplar.Maximum, "Aspen", "deepskyblue2")
-plotPollen(pollen$Spruce.Minimum, pollen$Spruce.Maximum, "Spruce", "springgreen3")
+plotPollen(pollen$SalixMin, pollen$SalixMax, "Willow", "red3")
+plotPollen(pollen$PopulusMin, pollen$PopulusMax, "Aspen", "deepskyblue2")
+plotPollen(pollen$PiceaMin, pollen$PiceaMax, "Spruce", "springgreen3")
 
 # createlegend
 plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
@@ -68,16 +68,16 @@ dev.off()
 
 # create function individual plots for Figs. 4, S1-S2
 indiv.plot <- function(taxon, color){
-  plot(pollen$Present.Localities, pollen$Time.Bin, 
-       ylim = rev(range(pollen$Time.Bin)), 
+  plot(pollen$AvailableData, pollen$Time, 
+       ylim = rev(range(pollen$Time)), 
        type = "l", 
        lty = 1,
        lwd = 5,
        xlab = "Number of Localities",
        ylab = "Time (ka)",
        pch = 14)
-  lines(taxon, pollen$Time.Bin,
-        ylim =rev(range(pollen$Time.Bin)),
+  lines(taxon, pollen$Time,
+        ylim =rev(range(pollen$Time)),
         type = "l",
         lty = 1,
         lwd = 5,
@@ -90,7 +90,7 @@ svg('SpruceIndividual.svg',
     width = 10,
     height = 12,
     pointsize = 30)
-indiv.plot(pollen$Spruce.Minimum, "springgreen3")
+indiv.plot(pollen$PiceaMin, "springgreen3")
 dev.off()
 
 # poplar
@@ -98,24 +98,24 @@ svg('PoplarIndividual.svg',
     width = 10,
     height = 12,
     pointsize = 30)
-indiv.plot(pollen$Poplar.Minimum, "deepskyblue2")
+indiv.plot(pollen$PopulusMin, "deepskyblue2")
 dev.off()
 
 
 
 ### CORRELATION ###
 # willow maximum and minimum
-cor.willow <- cor.test(pollen$Willow.Maximum, pollen$Willow.Minimum, 
+cor.willow <- cor.test(pollen$SalixMax, pollen$SalixMin, 
                 method = "spearman")
 cor.willow # rho = 0.98, p < 2.2e-16
 
 # aspen maximum and minimum
-cor.aspen <- cor.test(pollen$Poplar.Maximum, pollen$Poplar.Minimum, 
+cor.aspen <- cor.test(pollen$PopulusMax, pollen$PopulusMin, 
                 method = "spearman")
 cor.aspen # rho = 0.95, p < 2.2e-16
 
 # spruce maximum and minimum
-cor.spruce <- cor.test(pollen$Spruce.Maximum, pollen$Spruce.Minimum, 
+cor.spruce <- cor.test(pollen$PiceaMax, pollen$PiceaMin, 
                        method = "spearman")
 cor.spruce # rho = 0.97, p < 2.2e-16
 
@@ -133,7 +133,7 @@ monteCarlo <- function(entry, decline, duration, nit) {
   for(it in 1:nit){
     
     # randomly resample incidence
-    vec = floor(runif(nrow(pollen), min = 0, max = pollen$Present.Localities + 1))
+    vec = floor(runif(nrow(pollen), min = 0, max = pollen$AvailableData + 1))
     indices_greater_than_entry = which(vec >= entry)
     
     # check if conditions are satisfied based on inputs
