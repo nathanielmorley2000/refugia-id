@@ -4,11 +4,10 @@ library("Bchron")
 library("tidyr")
 library("dplyr")
 
-# create directory for temporary files, if not already created
-dir.create("TempFiles")
-
-# create directory for results, if not already created
-dir.create("Results")
+# create directories
+dir.create("TempFiles") # for temporary files
+dir.create("IndividualSummaries") # for time calibrated summary tables
+dir.create("Results") # for results to be used in paper or supplement
 
 ###################################################################################
 ############################## CALL RADIOMETRIC DATA ############################## 
@@ -259,11 +258,12 @@ write.csv(output_df, "TempFiles/calibratedDates.csv", row.names = FALSE)
 ###################################################################################
 ############################## BIN AND ORGANIZE DATA ##############################
 ###################################################################################
-timeBin = 500
-taxon = "Picea"
-samplingProtocol = "Minimum"
-yearMin = 0
-yearMax = 20000
+
+# load libraries
+library("neotoma2")
+library("Bchron")
+library("tidyr")
+library("dplyr")
 
 # if needed, read calibrated radiometric data from temporary .csv files
 output_df <- read.csv("TempFiles/calibratedDates.csv")
@@ -304,7 +304,7 @@ PiceaMin <- organizeData(timeBin = 500,
                          yearMin = 0,
                          yearMax = 20000)
 
-write.csv(pivot_table, "pivottable.csv", row.names = FALSE)
+write.csv(PiceaMin, "IndividualSummaries/PiceaMin", row.names = FALSE)
 
 ###################################################################################
 ###################################################################################
