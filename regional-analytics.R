@@ -15,7 +15,7 @@ plotPollen <- function(taxonMin, taxonMax, taxon, color) {
        type = "l", 
        lty = 1,
        lwd = 3,
-       xlab = "Number of Localities",
+       xlab = "Presence",
        ylab = "Time (ka)",
        main = taxon)
   
@@ -77,7 +77,7 @@ indiv.plot <- function(taxon, color){
        type = "l", 
        lty = 1,
        lwd = 5,
-       xlab = "Number of Localities",
+       xlab = "Presence",
        ylab = "Time (ka)",
        pch = 14)
   lines(taxon, pollen$Time,
