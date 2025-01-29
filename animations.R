@@ -248,7 +248,7 @@ generateStills <- function(timestamp, mapdata_name, directory) {
         limits = c(0, max(mapdata$value, na.rm = TRUE)),  # set limits starting from 0
         na.value = NA  # ensure NA values are not plotted
       ) +
-      labs(color = "Abundance", title = paste0("Time: ", i, " ka"))
+      labs(color = "Abundance")
     
     # save stills as .svg file for later examination
     ggsave(paste0(directory, mapdata_name, i, "still.svg"), plot = map_with_data, width = 8, height = 6, dpi = 300, bg = "white")
