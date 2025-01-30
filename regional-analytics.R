@@ -39,14 +39,14 @@ plotPollen <- function(taxonMin, taxonMax, taxon, color) {
 }
 
 # direct software to save as .svg to local directory
-pdf('Results/Figure3.pdf', 
-    width = 4.33,
-    height = 4.33,
-    bg = "white")
+svg('Results/Figure3.svg', 
+    width = 32,
+    height = 24,
+    pointsize = 30)
 
 # set up graphical parameters
 par(mfrow = c(2,2),
-    mar = c(4,4,2,1))
+    mar = c(4.1, 4.4, 4.1, 1.9))
 
 # call individual plots
 plotPollen(pollen$SalixMin, pollen$SalixMax, "Salix", "red3")
