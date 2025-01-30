@@ -12,6 +12,7 @@ plotPollen <- function(taxonMin, taxonMax, taxon, color) {
   # create plot and plot data availability
   plot(pollen$AvailableData, pollen$Time, 
        ylim = rev(range(pollen$Time)), 
+       xlim = c(0,30),
        type = "l", 
        lty = 1,
        lwd = 3,
@@ -73,7 +74,8 @@ dev.off()
 # create function individual plots for Figs. 4, S1-S2
 indiv.plot <- function(taxon, color){
   plot(pollen$AvailableData, pollen$Time, 
-       ylim = rev(range(pollen$Time)), 
+       ylim = rev(range(pollen$Time)),
+       xlim = c(0,30),
        type = "l", 
        lty = 1,
        lwd = 5,
