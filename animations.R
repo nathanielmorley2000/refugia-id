@@ -259,13 +259,19 @@ generateStills <- function(timestamp, mapdata_name, directory) {
 dir.create("Results/PiceaStills")
 dir.create("Results/PopulusStills")
 
+# generate stills for spruce refugium
 generateStills(
   timestamp = c(16500, 14500, 10500, 8500),
   mapdata_name = "PiceaMin",
   directory = "Results/PiceaStills/"
 )
 
-
+# generate stills for tentative poplar trap and relict locality
+generateStills(
+  timestamp = c(7000, 4500, 4000, 3000, 2500, 2000, 0),
+  mapdata_name = "PopulusMin",
+  directory = "Results/PopulusStills/"
+)
 
 ###################################################################################
 ###################################################################################
