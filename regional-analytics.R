@@ -15,7 +15,7 @@ plotPollen <- function(taxonMin, taxonMax, taxon, color) {
        xlim = c(0,30),
        type = "l", 
        lty = 1,
-       lwd = 3,
+       lwd = 5,
        xlab = "Presence",
        ylab = "Time (ka)",
        main = taxon)
@@ -25,7 +25,7 @@ plotPollen <- function(taxonMin, taxonMax, taxon, color) {
         ylim =rev(range(pollen$Time)),
         type = "l",
         lty = 1,
-        lwd = 2,
+        lwd = 4,
         col = color)
   
   # plot maximum taxon
@@ -33,16 +33,16 @@ plotPollen <- function(taxonMin, taxonMax, taxon, color) {
         ylim =rev(range(pollen$Time)),
         type = "l",
         lty = 2,
-        lwd = 2,
+        lwd = 4,
         col = color)
-  abline(h=11.7, lty = 3, lwd = 3, col="navy")
+  abline(h=11.7, lty = 3, lwd = 5, col="navy")
 }
 
 # direct software to save as .svg to local directory
 svg('Results/Figure3.svg', 
-    width = 32,
+    width = 24,
     height = 24,
-    pointsize = 30)
+    pointsize = 40)
 
 # set up graphical parameters
 par(mfrow = c(2,2),
@@ -60,12 +60,13 @@ legend("center", legend=c("Localities with Data", "Onset of Holocene",
                           "Picea (Maximum)", "Picea (Minimum)"),
        col=c("black", "navy", "red3", "red3", "deepskyblue2", "deepskyblue2",  "springgreen3", "springgreen3"), 
        lty=c(1,3,1,2,1,2,1,2),
-       lwd=c(3,3,2,2,2,2,2,2),
+       lwd=c(5,5,4,4,4,4,4,4),
+       cex=0.8,
        pt.cex=1,
        x.intersp = 0.5,
        xpd=T,
        ncol=2,
-       text.width = 0.4,
+       text.width = 0.5,
        title = "Legend")
 
 # stop saving as .png file
