@@ -53,7 +53,7 @@ plotPollen(pollen$SalixMin, pollen$SalixMax, "Salix", "red3")
 plotPollen(pollen$PopulusMin, pollen$PopulusMax, "Populus", "deepskyblue2")
 plotPollen(pollen$PiceaMin, pollen$PiceaMax, "Picea", "springgreen3")
 
-# createlegend
+# create legend
 plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
 legend("center", legend=c("Localities with Data", "Onset of Holocene",
                           "Salix (Maximum)", "Salix (Minimum)", "Populus (Maximum)", "Populus (Minimum)",
@@ -69,7 +69,7 @@ legend("center", legend=c("Localities with Data", "Onset of Holocene",
        text.width = 0.5,
        title = "Legend")
 
-# stop saving as .png file
+# stop saving as .svg file
 dev.off()
 
 # create function individual plots for Figs. 4, S1-S2
