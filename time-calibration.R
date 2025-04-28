@@ -63,8 +63,8 @@ neotomaGeochron <- function(site_ids) {
 }
 
 loc_controls <- neotomaGeochron(site_ids = c(10537, 10539, 513, 2271, 10538, 1396, 1748, 790, 992,  1974, 
-                                         2270, 1973, 2245, 1977, 10102, 1955, 207, 2232, 1699, 1503,
-                                         1355, 2551, 13690, 11575, 11579, 11583, 846))
+                                         2270, 2245, 1977, 10102, 1955, 207, 2232, 1699, 1503,
+                                         1355, 2551, 13690, 11575, 11579, 11583))
 
 # manually call geochronologic controls for Site 11583 (different formatting)
 geochron11583 <- neotoma2::get_datasets(siteid = 11583, all_data = TRUE) %>%
@@ -148,8 +148,8 @@ neotomaPollen <- function(site_ids, taxa) {
 }
 
 loc_pollen <- neotomaPollen(site_ids = c(10537, 10539, 513, 2271, 10538, 1396, 1748, 790, 992,  1974, 
-                                         2270, 1973, 2245, 1977, 10102, 1955, 207, 2232, 1699, 1503,
-                                         1355, 2551, 13690, 11575, 11579, 11583, 846),
+                                         2270, 2245, 1977, 10102, 1955, 207, 2232, 1699, 1503,
+                                         1355, 2551, 13690, 11575, 11579, 11583),
                             taxa = c("Salix", "Populus", "Picea"))
   
 # pivot table to display each taxon as a separate column
@@ -246,7 +246,7 @@ output_df <- calibrateDates(filtered_controls, pollen_wide)
 output_df <- output_df %>%
   relocate(age, .after = calibrated_age)
 
-# # save dataframe as a .csv file for easy recall
+# save dataframe as a .csv file for easy recall
 write.csv(output_df, "TempFiles/calibratedDates.csv", row.names = FALSE)
 
 #############################################################################
