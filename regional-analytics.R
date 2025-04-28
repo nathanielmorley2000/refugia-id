@@ -126,12 +126,12 @@ cor.Salix # rho = 0.99, p < 2.2e-16
 # Populus maximum and minimum
 cor.Populus <- cor.test(pollen$PopulusMax, pollen$PopulusMin, 
                 method = "spearman")
-cor.Populus # rho = 0.90, p = 2.37e-15
+cor.Populus # rho = 0.89, p = 4.239e-15
 
 # Picea maximum and minimum
 cor.Picea <- cor.test(pollen$PiceaMax, pollen$PiceaMin, 
                        method = "spearman")
-cor.Picea # rho = 0.98, p < 2.2e-16
+cor.Picea # rho = 0.97, p < 2.2e-16
 
 #########################################################################
 #########################################################################
@@ -184,9 +184,9 @@ monteCarlo <- function(entry, decline, duration, nit) {
 
 
 # significance of going from >= 11 down to <= 5 for 7 time bins, then back up to >= 11
-success <- monteCarlo(10, 7, 11, 100000)
+success <- monteCarlo(8, 5, 9, 100000)
 p <- success/100000
-p # p = 0.0007
+p # p = 0.00166
 
 ############################################################################################
 ############################################################################################
