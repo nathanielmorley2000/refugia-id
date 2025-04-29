@@ -183,10 +183,10 @@ monteCarlo <- function(entry, decline, duration, nit) {
 }
 
 
-# significance of going from >= 11 down to <= 5 for 7 time bins, then back up to >= 11
+# significance of going from >= 8 down to <= 5 for 9 time bins, then back up to >= 8
 success <- monteCarlo(8, 5, 9, 100000)
 p <- success/100000
-p # p = 0.00166
+p # p = 0.00144
 
 ############################################################################################
 ############################################################################################
