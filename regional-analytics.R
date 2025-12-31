@@ -188,6 +188,35 @@ success <- monteCarlo(8, 5, 9, 100000)
 p <- success/100000
 p # p = 0.00144
 
+
+# Re-expansion Coefficient
+library(raster)
+library(dplyr)
+library(tidyr)
+spatialData <- read.csv("IndividualSummaries/PiceaMin.csv")
+coordinates <- as.matrix(cbind(spatialData$long, spatialData$lat))
+
+# Find distances between each locality
+distances <- pointDistance(p1 = coordinates, 
+                           p2 = coordinates,
+                           lonlat = TRUE, allpairs = TRUE) %>%
+  as.data.frame() %>%
+  rename_with(~ spatialData$sitename) %>%
+  mutate(spatialData$sitename, .before = "Angal Lake") %>%
+  pivot_longer(cols = 2:26) %>%
+  rename(Site_1 = "spatialData$sitename",
+         Site_2 = name,
+         Distance = value) %>%
+  filter(Distance != 0)
+
+# Rank distances between each locality
+rankDistances <- distances %>%
+  group_by(Site_1) %>%
+  mutate(Rank_Distance = rank(Distance))
+
+
+
+
 ############################################################################################
 ############################################################################################
 ############################################################################################
