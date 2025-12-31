@@ -189,11 +189,23 @@ p <- success/100000
 p # p = 0.00144
 
 
-# Re-expansion Coefficient
+# Load libraries
 library(raster)
 library(dplyr)
 library(tidyr)
+
+# Load data
 spatialData <- read.csv("IndividualSummaries/PiceaMin.csv")
+
+# Find presence/absence for spatial data
+presence <- data.frame(spatialData[,1:5])
+for (i in 6:46) {
+  presence[,i] <- ifelse(spatialData[,i] > 1, 1, spatialData[,i])
+}
+colnames(presence) <- colnames(spatialData)  
+  
+
+# Isolate coordinates for distances
 coordinates <- as.matrix(cbind(spatialData$long, spatialData$lat))
 
 # Find distances between each locality
@@ -214,8 +226,41 @@ rankDistances <- distances %>%
   group_by(Site_1) %>%
   mutate(Rank_Distance = rank(Distance))
 
+# t0 = 13 ka
+t0 = presence$X13000 # do with previous one
+t1 = presence$X12500
 
+# If you have an NA in t1, replace with value from t0
+t01 <- ifelse(is.na(t1), t0, t1)
 
+# Are there any differences between corrected t1 and t0?
+diff <- (t01 > t0) # make greater than 1?
+
+presentLocalities <- spatialData$sitename[which(t0 == 1)]
+
+distance <- 0
+for (i in length(diff)) {
+  
+  
+  if (diff[i] == TRUE) {
+    
+    # Find site name for given difference
+    sitename = spatialData$sitename[i]
+    
+    # Find all distances between site and previous sites
+    sites <- Distances %>%
+      filter(Site_1 == sitename,
+             Site_2 == presentLocalities)
+    
+    # Pick smallest distance
+    distance <- distance + min(sites$Distance)
+  }
+  
+  # replace initial t with t01!
+}
+
+# ASSUMPTIONS:
+## Once a site it marked "present," it remains present through NAs until we see an absence
 
 ############################################################################################
 ############################################################################################
