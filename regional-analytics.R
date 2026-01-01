@@ -264,42 +264,68 @@ findDistance <- function(t0, t1) {
   return(distance)
 }
 
-
-
-# Monte Carlo
-# Create random vector with length t1
-t0 = corrected.Presence$X7500
-t1 = corrected.Presence$X7000
-nit = 1000
-
-
-# observed expansion
-actual <- findDistance(t0 = t0,
-                       t1 = t1)
-
-it <- 0
-for (i in 1:nit) {
-  # Simulate P/A for t1 with 50% probability of occurring
-  ts <- rbinom(length(t1), 1, 0.5)
+# Create function for Monte Carlo analysis
+monteCarlo <- function(start, nit) {
   
-  # Find distance between simulated points and observed "starting" point
-  simulated <- findDistance(t0 = t0, t1 = ts)
+  # Initialize data frame for results
+  monteCarlo.Results <- data.frame(Time.Bin = integer(0),
+                                   p.value = numeric(0))
   
-  # Add to counter
-  if (simulated <= actual) {
-    it <- it + 1
+  # Isolate initial and expanded time bins
+  t0 <- select(corrected.Presence, start)
+  t1 <- corrected.Presence %>% select(which(names(corrected.Presence) == start) - 1)
+  
+  # Set loop defaults
+  time <- 1
+  p <- 0
+  
+  # Create while loop so loop stops if p-value insiginficant
+  while (p < 0.05) {
+    
+    # Observed expansion
+    actual <- findDistance(t0 = t0,
+                           t1 = t1)
+    
+    # Set loop defaults
+    it <- 1
+    
+    # create for loop to randomly generate patterns of P/A and compare pattern to observed
+    for (i in 1:nit) {
+      
+      # Simulate P/A for t1 with 50% probability of occurring
+      ts <- rbinom(nrow(t1), 1, 0.5)
+      
+      # Find distance between simulated points and observed "starting" point
+      simulated <- findDistance(t0 = t0, t1 = ts)
+      
+      # Add to counter
+      if (simulated <= actual) {
+        it <- it + 1
+      }
+    }
+    
+    # Calculate p-value
+    p <- it/nit
+    
+    # Store results in data frame
+    monteCarlo.Results[nrow(monteCarlo.Results) + 1,] = c(names(t1), p)
+    
+    # Advance conditions
+    t0 <- t1
+    t1 <- corrected.Presence %>% select(which(names(corrected.Presence) == names(t0)) - 1)
+    time <- time + 1
   }
+  
+  return(monteCarlo.Results)
 }
 
-p <- it/nit
+# Monte Carlo
+# Perform Monte Carlo Analysis starting 13 ka
+monteCarlo.Results <- monteCarlo(start = "X13000", nit = 10000)
+monteCarlo.Results
 
-
-t0 <- t1
-t2 <- corrected.Presence[,(t1 - 1)]
-
-
-
-
+# Export to CSV
+write.csv(monteCarlo.Results, file = "Results/monteCarloResults.csv", row.names = FALSE)
 
 
 
@@ -308,6 +334,7 @@ t2 <- corrected.Presence[,(t1 - 1)]
 ## Once a site it marked "present," it remains present through NAs until we see an absence
 ## NAs  are considered unknown until we see either a presence or an absence. If a locality goes from NA to a state, it is considered "No Change"
 ## A given locality has a 50% probability of being present or absent in the Monte Carlo simulation
+## If a locality went from present to absent, it was not directly penalized. It would, however, be penalized when it was recolonized (the recolonization would count as a new colonization for the purpose of the algorithm).
 ############################################################################################
 ############################################################################################
 ############################################################################################
