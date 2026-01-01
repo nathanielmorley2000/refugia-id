@@ -202,8 +202,17 @@ presence <- data.frame(spatialData[,1:5])
 for (i in 6:46) {
   presence[,i] <- ifelse(spatialData[,i] > 1, 1, spatialData[,i])
 }
-colnames(presence) <- colnames(spatialData)  
-  
+
+# Create NA-adjusted P/A data
+corrected.Presence <- presence
+for (i in 45:6) {
+  j = i + 1
+  corrected.Presence[,i] <- ifelse(is.na(corrected.Presence[,i]), corrected.Presence[,j], corrected.Presence[,i])
+}
+
+# Rename columns for easier utility
+colnames(corrected.Presence) <- colnames(spatialData) 
+
 
 # Isolate coordinates for distances
 coordinates <- as.matrix(cbind(spatialData$long, spatialData$lat))
@@ -221,47 +230,84 @@ distances <- pointDistance(p1 = coordinates,
          Distance = value) %>%
   filter(Distance != 0)
 
-# Rank distances between each locality
-rankDistances <- distances %>%
-  group_by(Site_1) %>%
-  mutate(Rank_Distance = rank(Distance))
 
-# t0 = 13 ka
-t0 = presence$X13000 # do with previous one
-t1 = presence$X12500
-
-# If you have an NA in t1, replace with value from t0
-t01 <- ifelse(is.na(t1), t0, t1)
-
-# Are there any differences between corrected t1 and t0?
-diff <- (t01 > t0) # make greater than 1?
-
-presentLocalities <- spatialData$sitename[which(t0 == 1)]
-
-distance <- 0
-for (i in length(diff)) {
+# Create function for finding distance of re-expansion between consecutive time bins
+findDistance <- function(t0, t1) {
   
+  # Find names of localities that were previously occupied
+  presentLocalities <- spatialData$sitename[which(t0 == 1)]
   
-  if (diff[i] == TRUE) {
+  # Are there any differences between t1 and t0?
+  diff <- (t1 > t0) %>%
+    ifelse(is.na(.), FALSE, .) # If there are any NAs that turn into a P/A, mark it FALSE
+  
+  # Create loop to calculate distance for a given time bin.
+  distance <- 0
+  for (i in 1:length(diff)) {
     
-    # Find site name for given difference
-    sitename = spatialData$sitename[i]
-    
-    # Find all distances between site and previous sites
-    sites <- Distances %>%
-      filter(Site_1 == sitename,
-             Site_2 == presentLocalities)
-    
-    # Pick smallest distance
-    distance <- distance + min(sites$Distance)
+    if (diff[i] == TRUE) {
+      
+      # Find site name for given difference
+      sitename = spatialData$sitename[i]
+      
+      # Find all distances between site and previous sites
+      sites <- distances %>%
+        filter(Site_1 == sitename) %>%
+        filter(Site_2 %in% presentLocalities)
+      
+      # Pick smallest distance
+      distance <- distance + min(sites$Distance)
+    }
   }
   
-  # replace initial t with t01!
+  # Return distance
+  return(distance)
 }
+
+
+
+# Monte Carlo
+# Create random vector with length t1
+t0 = corrected.Presence$X7500
+t1 = corrected.Presence$X7000
+nit = 1000
+
+
+# observed expansion
+actual <- findDistance(t0 = t0,
+                       t1 = t1)
+
+it <- 0
+for (i in 1:nit) {
+  # Simulate P/A for t1 with 50% probability of occurring
+  ts <- rbinom(length(t1), 1, 0.5)
+  
+  # Find distance between simulated points and observed "starting" point
+  simulated <- findDistance(t0 = t0, t1 = ts)
+  
+  # Add to counter
+  if (simulated <= actual) {
+    it <- it + 1
+  }
+}
+
+p <- it/nit
+
+
+t0 <- t1
+t2 <- corrected.Presence[,(t1 - 1)]
+
+
+
+
+
+
+
 
 # ASSUMPTIONS:
 ## Once a site it marked "present," it remains present through NAs until we see an absence
-
+## NAs  are considered unknown until we see either a presence or an absence. If a locality goes from NA to a state, it is considered "No Change"
+## A given locality has a 50% probability of being present or absent in the Monte Carlo simulation
 ############################################################################################
 ############################################################################################
 ############################################################################################
