@@ -320,8 +320,8 @@ monteCarlo <- function(start, nit) {
 }
 
 # Monte Carlo
-# Perform Monte Carlo Analysis starting 13 ka
-monteCarlo.Results <- monteCarlo(start = "X13000", nit = 10000)
+# Perform Monte Carlo Analysis starting 13.5 ka
+monteCarlo.Results <- monteCarlo(start = "X13500", nit = 10000)
 monteCarlo.Results
 
 # Export to CSV
