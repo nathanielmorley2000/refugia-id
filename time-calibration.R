@@ -112,6 +112,9 @@ neotomaPollen <- function(site_ids, taxa) {
         for (taxon in taxa) {
           # harmonize taxa based on user input
           allSamp = allSamp %>% 
+            dplyr::filter(elementtype == "pollen") %>%
+            group_by(age) %>%
+            mutate(value = (value / sum(value))) %>%
             dplyr::filter(ecologicalgroup %in% c("TRSH")) %>% 
             mutate(variablename = replace(variablename, 
                                           stringr::str_detect(variablename, taxon), 
