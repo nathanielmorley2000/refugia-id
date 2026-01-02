@@ -200,7 +200,7 @@ spatialData <- read.csv("IndividualSummaries/PiceaMin.csv")
 # Find presence/absence for spatial data
 presence <- data.frame(spatialData[,1:5])
 for (i in 6:46) {
-  presence[,i] <- ifelse(spatialData[,i] > 1, 1, spatialData[,i])
+  presence[,i] <- ifelse(spatialData[,i] > 0, 1, spatialData[,i])
 }
 
 # Create NA-adjusted P/A data
@@ -272,8 +272,8 @@ monteCarlo <- function(start, nit) {
                                    p.value = numeric(0))
   
   # Isolate initial and expanded time bins
-  t0 <- select(corrected.Presence, start)
-  t1 <- corrected.Presence %>% select(which(names(corrected.Presence) == start) - 1)
+  t0 <- dplyr::select(corrected.Presence, start)
+  t1 <- corrected.Presence %>% dplyr::select(which(names(corrected.Presence) == start) - 1)
   
   # Set loop defaults
   time <- 1
@@ -312,7 +312,7 @@ monteCarlo <- function(start, nit) {
     
     # Advance conditions
     t0 <- t1
-    t1 <- corrected.Presence %>% select(which(names(corrected.Presence) == names(t0)) - 1)
+    t1 <- corrected.Presence %>% dplyr::select(which(names(corrected.Presence) == names(t0)) - 1)
     time <- time + 1
   }
   
