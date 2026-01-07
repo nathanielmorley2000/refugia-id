@@ -193,6 +193,7 @@ p # p = 0.00144
 library(raster)
 library(dplyr)
 library(tidyr)
+library(stringr)
 
 # Load data
 spatialData <- read.csv("IndividualSummaries/PiceaMin.csv")
@@ -203,17 +204,6 @@ for (i in 6:46) {
   presence[,i] <- ifelse(spatialData[,i] > 0, 1, spatialData[,i])
 }
 colnames(presence) <- colnames(spatialData)
-
-# Create NA-adjusted P/A data
-corrected.Presence <- presence
-for (i in 45:6) {
-  j = i + 1
-  corrected.Presence[,i] <- ifelse(is.na(corrected.Presence[,i]), corrected.Presence[,j], corrected.Presence[,i])
-}
-
-# Rename columns for easier utility
-colnames(corrected.Presence) <- colnames(spatialData) 
-
 
 # Isolate coordinates for distances
 coordinates <- as.matrix(cbind(spatialData$long, spatialData$lat))
@@ -230,55 +220,66 @@ distances <- pointDistance(p1 = coordinates,
          Site_2 = name,
          Distance = value)
 
-
-start = "X20000"
-end = "X0"
-refugium = "Kollioksak Lake"
-
-results <- data.frame(time = numeric(0), 
-                      average.distance = numeric(0))
-
-t0 <- dplyr::select(presence, start)
-
-while (names(t0) != end) {
-  sites <- (t0 == 1) %>%
-    ifelse(is.na(.), FALSE, .) # If there are any NAs that turn into a P/A, mark it FALSE
+# Create custom function to calculate average distance between refugium and colonized localities in time interval of interest
+findDistance <- function (start, end, refugium) {
   
-  # Create loop to calculate total distance from refugium for a given time bin.
-  totalDistance <- 0
-  for (i in 1:as.numeric(length(sites))) {
-    if (sites[i] == TRUE) {
-      
-      # Find site name for given difference
-      sitename = spatialData$sitename[i]
-      
-      # Find all distances between site and previous sites
-      individualDistance <- distances %>%
-        filter(Site_1 == refugium) %>%
-        filter(Site_2 == sitename)
-      
-      # Pick smallest distance
-      totalDistance <- totalDistance + individualDistance$Distance
+  # Initialize empty data frame to store results
+  results <- data.frame(time = numeric(0), 
+                        average.distance = numeric(0))
+  
+  # Isolate first time bin
+  t0 <- dplyr::select(presence, start)
+  
+  # Create while loop to calculate average distance for each time bin while loop is before end
+  while (names(t0) != end) {
+    
+    # Create dataframe of which sites are colonized for a given time bin
+    sites <- (t0 == 1) %>%
+      ifelse(is.na(.), FALSE, .) # If there are any NAs that turn into a P/A, mark it FALSE
+    
+    # Create loop to calculate total distance from refugium for a given time bin.
+    totalDistance <- 0
+    for (i in 1:as.numeric(length(sites))) {
+      if (sites[i] == TRUE) {
+        
+        # Find site name for given difference
+        sitename = spatialData$sitename[i]
+        
+        # Find all distances between site and previous sites
+        individualDistance <- distances %>%
+          filter(Site_1 == refugium) %>%
+          filter(Site_2 == sitename)
+        
+        # Pick smallest distance
+        totalDistance <- totalDistance + individualDistance$Distance
+      }
     }
+    
+    # Calculate average distance for a given time bin
+    averageDistance <- totalDistance / sum(!is.na(t0))
+    
+    # Store results in data frame
+    results[nrow(results) + 1,] = c(names(t0), averageDistance)
+    
+    # Advance conditions
+    t0 <- presence %>% dplyr::select(which(names(presence) == names(t0)) - 1)
   }
   
-  # Calculate average distance for a given time bin
-  averageDistance <- totalDistance / sum(t0 == 1, na.rm = TRUE)
+  # Correct transcription artefacts so correlation can be performed
+  results$time <- -1 * as.numeric(str_remove(results$time, "X"))
+  results$average.distance <- as.numeric(results$average.distance)
   
-  # Store results in data frame
-  results[nrow(results) + 1,] = c(names(t0), totalDistance)
-  
-  # Advance conditions
-  t0 <- presence %>% dplyr::select(which(names(presence) == names(t0)) - 1)
+  return(results)
 }
 
-results$time <- -1 * as.numeric(str_remove(results$time, "X"))
-results$average.distance <- as.numeric(results$average.distance)
+# Run function
+results <- findDistance(start = "X13000",
+                        end = "X8000",
+                        refugium = "Kollioksak Lake")
 
-
+# Perform correlation on results
 cor.test(results$time, results$average.distance, method = "spearman")
 
-plot(results$time, results$average.distance)
 
 
 
