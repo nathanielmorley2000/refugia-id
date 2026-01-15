@@ -144,7 +144,7 @@ cor.Picea # rho = 0.97, p < 2.2e-16
 ############################################################################################
 
 # create function for Monte Carlo simultation (with replacement)
-monteCarlo <- function(entry, decline, duration, nit) {
+temporalMonteCarlo <- function(entry, decline, duration, nit) {
   # set counters for simulation
   it = 1
   score = 0
@@ -184,9 +184,9 @@ monteCarlo <- function(entry, decline, duration, nit) {
 
 
 # significance of going from >= 8 down to <= 5 for 9 time bins, then back up to >= 8
-success <- monteCarlo(8, 5, 9, 100000)
+success <- temporalMonteCarlo(9, 6, 10, 100000)
 p <- success/100000
-p # p = 0.00144
+p # p = 0.00148
 
 
 # Load libraries
@@ -198,12 +198,29 @@ library(stringr)
 # Load data
 spatialData <- read.csv("IndividualSummaries/PiceaMin.csv")
 
-# Find presence/absence for spatial data
-presence <- data.frame(spatialData[,1:5])
-for (i in 6:46) {
-  presence[,i] <- ifelse(spatialData[,i] > 0, 1, spatialData[,i])
+# Create custom function for creating a corrected presence dataframe
+correctPresence <- function (data) {
+  
+  # Find presence/absence for spatial data
+  presence <- data.frame(spatialData[,1:5])
+  for (i in 6:46) {
+    presence[,i] <- ifelse(spatialData[,i] > 0, 1, spatialData[,i])
+  }
+  colnames(presence) <- colnames(spatialData)
+  
+  # Create NA-adjusted P/A data
+  corrected.Presence <- presence
+  for (i in 45:6) {
+    j = i + 1
+    corrected.Presence[,i] <- ifelse(is.na(corrected.Presence[,i]), corrected.Presence[,j], corrected.Presence[,i])
+  }
+  colnames(corrected.Presence) <- colnames(spatialData) 
+  
+  return(corrected.Presence)
 }
-colnames(presence) <- colnames(spatialData)
+
+# Call function
+corrected.Presence <- correctPresence(data = spatialData)
 
 # Isolate coordinates for distances
 coordinates <- as.matrix(cbind(spatialData$long, spatialData$lat))
@@ -220,8 +237,129 @@ distances <- pointDistance(p1 = coordinates,
          Site_2 = name,
          Distance = value)
 
+
+# Create custom function to compare 
+findRankDistance <- function (start, stop, refugium) {
+  
+  # Initialize data frame to store correlation data
+  distance_travelled <- data.frame(Age = numeric(0),
+                                   Distance = numeric(0))
+  
+  # Isolate initial and expanded time bins
+  t0 <- dplyr::select(corrected.Presence, start)
+  t1 <- corrected.Presence %>% dplyr::select(which(names(corrected.Presence) == start) - 1)
+  t.final <- dplyr::select(corrected.Presence, stop)
+  
+  # Isolate distances to only include those with the refugium and rank them
+  rankDistances <- distances %>%
+    filter(Site_1 == refugium) %>%
+    mutate(Rank_Distance = rank(Distance) - 1)
+  
+  while (names(t1) != names(t.final)) {
+    
+    # Are there any differences between t1 and t0?
+    sites <- (t1 > t0) %>%
+      ifelse(is.na(.), FALSE, .) # If there are any NAs that turn into a P/A, mark it FALSE
+    
+    # Create loop to calculate total distance from refugium for a given time bin.
+    totalRank <- 0
+    for (i in 1:as.numeric(length(sites))) {
+      if (sites[i] == TRUE) {
+        
+        # Find site name for given difference
+        sitename <- spatialData$sitename[i]
+        
+        # Find all distances between site and previous sites
+        individualDistance <- rankDistances %>%
+          filter(Site_2 == sitename)
+        
+        # Pick smallest distance
+        totalRank <- totalRank + individualDistance$Rank_Distance
+      }
+    }
+    
+    # Calculate average ranked distance for a given time bin
+    averageRank <- totalRank / length(which(sites == TRUE)) #length(which(!is.na(t1)))
+    
+    # Store results in data frame
+    distance_travelled[nrow(distance_travelled) + 1,] = c(names(t1), averageRank)
+    
+    # Advance conditions
+    t0 <- t1
+    t1 <- corrected.Presence %>% dplyr::select(which(names(corrected.Presence) == names(t0)) - 1)
+  }
+  
+  # Correct transcription artefacts so correlation can be performed
+  distance_travelled$Age <- -1 * as.numeric(str_remove(distance_travelled$Age, "X"))
+  distance_travelled$Distance <- as.numeric(distance_travelled$Distance)
+  
+  return(distance_travelled)
+}
+distance_travelled <- findRankDistance(start = "X12000", stop = "X6500", refugium = "Kollioksak Lake")
+
+
+# Calculate correlation for observed data
+result <- cor.test(distance_travelled$Age, distance_travelled$Distance, method = "spearman")
+
+# Create custom Monte Carlo to identify spatial pattern
+spatialMonteCarlo <- function(distance_travelled, result, nit) {
+  
+  # Reset counter to 0
+  it <- 0
+  for (i in 1:nit) {
+    test <- runif(n = nrow(distance_travelled), 1, 24)
+    
+    testResult <- cor.test(distance_travelled$Age, test, method = "spearman")
+    
+    # Check that test correlation is significant
+    if (testResult$p.value < 0.05) {
+      
+      # Check whether test correlation is better than actual correlation
+      if (testResult$estimate > result$estimate) {
+        
+        # Add to counter
+        it <- it + 1
+      }
+    }
+  }
+  
+  # Calculate success ratio
+  success <- it / nit
+  success
+}
+spatialMonteCarlo(distance_travelled = distance_travelled, result = result, nit = 10000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Create custom function to calculate average distance between refugium and colonized localities in time interval of interest
-findDistance <- function (start, end, refugium) {
+findDistance <- function (start, stop, refugium) {
   
   # Initialize empty data frame to store results
   results <- data.frame(time = numeric(0), 
@@ -231,10 +369,11 @@ findDistance <- function (start, end, refugium) {
   t0 <- dplyr::select(presence, start)
   
   # Create while loop to calculate average distance for each time bin while loop is before end
-  while (names(t0) != end) {
+  while (names(t0) != stop) {
     
     # Create dataframe of which sites are colonized for a given time bin
     sites <- (t0 == 1) %>%
+      filter()
       ifelse(is.na(.), FALSE, .) # If there are any NAs that turn into a P/A, mark it FALSE
     
     # Create loop to calculate total distance from refugium for a given time bin.
@@ -274,11 +413,150 @@ findDistance <- function (start, end, refugium) {
 
 # Run function
 results <- findDistance(start = "X13000",
-                        end = "X8000",
+                        stop = "X8000",
                         refugium = "Kollioksak Lake")
 
 # Perform correlation on results
 cor.test(results$time, results$average.distance, method = "spearman")
+
+summary(lm(average.distance ~ time, data = results))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Create function for finding distance of re-expansion between consecutive time bins
+findDistance <- function(t0, t1) {
+  
+  # Find names of localities that were previously occupied
+  presentLocalities <- spatialData$sitename[which(t0 == 1)]
+  
+  # Are there any differences between t1 and t0?
+  diff <- (t1 > t0) %>%
+    ifelse(is.na(.), FALSE, .) # If there are any NAs that turn into a P/A, mark it FALSE
+  
+  # Create loop to calculate distance for a given time bin.
+  distance <- 0
+  for (i in 1:length(diff)) {
+    
+    if (diff[i] == TRUE) {
+      
+      # Find site name for given difference
+      sitename = spatialData$sitename[i]
+      
+      # Find all distances between site and previous sites
+      sites <- distances %>%
+        filter(Site_1 == sitename) %>%
+        filter(Site_2 %in% presentLocalities)
+      
+      # Pick smallest distance
+      distance <- distance + min(sites$Distance)
+    }
+  }
+  
+  # Return distance
+  return(distance)
+}
+
+
+start = "X13500"
+end = "X8000"
+
+# Initialize data frame for correlation data
+distance_travelled <- data.frame(Age = numeric(0),
+                                 Distance = numeric(0))
+
+# Isolate initial and expanded time bins
+t0 <- dplyr::select(corrected.Presence, start)
+t1 <- corrected.Presence %>% dplyr::select(which(names(corrected.Presence) == start) - 1)
+t.final <- dplyr::select(corrected.Presence, end)
+
+i <- 1
+while (t1 != t.final){
+  
+  # Observed expansion
+  distance <- findDistance(t0 = t0, t1 = t1)
+  
+  # Fill out data frame
+  distance_travelled$Distance[i] <- distance
+  
+  # Advance conditions
+  t0 <- t1
+  t1 <- corrected.Presence %>% dplyr::select(which(names(corrected.Presence) == names(t0)) - 1)
+  i <- i + 1
+}
+
+
+# Create function for Monte Carlo analysis
+monteCarlo <- function(start, nit) {
+  
+  # Initialize data frame for results
+  monteCarlo.Results <- data.frame(Time.Bin = integer(0),
+                                   p.value = numeric(0))
+  
+  # Isolate initial and expanded time bins
+  t0 <- dplyr::select(corrected.Presence, start)
+  t1 <- corrected.Presence %>% dplyr::select(which(names(corrected.Presence) == start) - 1)
+  
+  # Set loop defaults
+  time <- 1
+  p <- 0
+  
+  # Create while loop so loop stops if p-value insiginficant
+  while (p < 0.05) {
+    
+    
+    # Set loop defaults
+    it <- 1
+    
+    # create for loop to randomly generate patterns of P/A and compare pattern to observed
+    for (i in 1:nit) {
+      
+      # Simulate P/A for t1 with 50% probability of occurring
+      ts <- rbinom(nrow(t1), 1, 0.5)
+      
+      # Find distance between simulated points and observed "starting" point
+      simulated <- findDistance(t0 = t0, t1 = ts)
+      
+      # Add to counter
+      if (simulated <= actual) {
+        it <- it + 1
+      }
+    }
+    
+    # Calculate p-value
+    p <- it/nit
+    
+    # Store results in data frame
+    monteCarlo.Results[nrow(monteCarlo.Results) + 1,] = c(names(t1), p)
+    
+    # Advance conditions
+    t0 <- t1
+    t1 <- corrected.Presence %>% dplyr::select(which(names(corrected.Presence) == names(t0)) - 1)
+    time <- time + 1
+  }
+  
+  return(monteCarlo.Results)
+}
 
 ############################################################################################
 ############################################################################################
