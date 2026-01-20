@@ -34,19 +34,25 @@ Table 1 of the manuscript.
 # Repository Guide
 
 Three files are included in the root of the repository to help with
-organization and documentation: \* README.md - This document, a brief
-overview of the repository and the material it contains. \* .gitignore -
+organization and documentation: 
+* README.md - This document, a brief
+overview of the repository and the material it contains. 
+* .gitignore -
 A list of files and file types to be excluded from GitHub (mostly
-temporary files). \* refugia-id.Rproj - R project file to organize
+temporary files). 
+* refugia-id.Rproj - R project file to organize
 repository.
 
 The `R` scripts are also included in the root of the repository to
-execute various parts of the analysis: \* time-calibration.R - A script
+execute various parts of the analysis: 
+* time-calibration.R - A script
 for pulling geochrnologies and pollen data from Neotoma database,
 performing the necessary time calibrations, and organizing the data in a
-way that can be useful for the analysis. \* animations.R - A script to
+way that can be useful for the analysis. 
+* animations.R - A script to
 create the animated heat maps and stills necessary seen in Fig. 4 and
-Supplementary Figs. 1 and 2. \* regional-analytics.R - A script for the
+Supplementary Figs. 1 and 2. 
+* regional-analytics.R - A script for the
 remaining analyses, including the temporal and spatial Monte Carlo
 analysis, time series shown in Figs. 3-4 and Supplementary Figs. 1-2,
 and correlations between minimum and maximum sampling protocols.
