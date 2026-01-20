@@ -47,5 +47,5 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
-*.svg
+.svg
 Locality20.csv
