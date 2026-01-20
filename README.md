@@ -7,7 +7,7 @@ Environment*. All data files were pulled from the Neotoma database using
 scripts contained herein. Geochronologic controls were pulled on January
 12, 2025, and pollen data were last pulled on January 1, 2026.
 
-All code is self-contained and do not require additional materials from
+All code is self-contained and does not require additional materials from
 outside of this repository.
 
 
@@ -55,8 +55,8 @@ The *IndividualSummaries* folder contains .csv files for each of the three taxa 
 and maximum sample protocols (see Methods of manuscript for details).
 
 The *Results* folder contains results needed for figures. These include the Picea stills that are used in 
-Fig. 4, the Populus stills needed for Supplementary Figs 1 and 2, the time series used in Figs. 3-4 and Supplementary Figs. 1-2,
-and the animated heat maps used in Supplementary videos 1-3. Note that any statistical outputs will be entered in your console when running
+Fig. 4, the Populus stills needed for Supplementary Figs. 1 and 2, the time series used in Figs. 3-4 and Supplementary Figs. 1-2,
+and the animated heat maps used in Supplementary Videos 1-3. Note that any statistical outputs will be entered in your console when running
 regional-analytics.R and were directly input into the manuscript.
 
 
