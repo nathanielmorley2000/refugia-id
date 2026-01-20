@@ -126,13 +126,16 @@ generateGIF <- function(mapdata_name) {
   num_years <- length(time_cols)
   
   # save animation to Results folder
-  anim_save(paste0("Results/", mapdata_name, ".gif"), animation = animate(map_with_animation, 
+  anim_save(paste0("Results/Videos/", mapdata_name, ".gif"), animation = animate(map_with_animation, 
                                                         nframes = num_years, 
                                                         fps = 1.5, 
                                                         width = 1600, 
                                                         height = 1200,
                                                         res = 150))
 }
+
+# create subdirectory in "Results" folder to store videos
+dir.create("Results/Videos")
 
 # generate animations and save them to Results folder as gifs
 generateGIF("SalixMin")
