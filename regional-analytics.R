@@ -1,3 +1,6 @@
+# create directory for storing time series
+dir.create("Results/TimeSeries")
+
 # import dataset and prepare for graphing
 pollen <- read.csv("TempFiles/PresenceThroughTime.csv")
 pollen$Time <- pollen$Time/1000
@@ -39,7 +42,7 @@ plotPollen <- function(taxonMin, taxonMax, taxon, color) {
 }
 
 # direct software to save as .svg to local directory
-svg('Results/Figure3.svg', 
+svg('Results/TimeSeries/Figure3.svg', 
     width = 24,
     height = 24,
     pointsize = 40)
@@ -93,7 +96,7 @@ indiv.plot <- function(taxon, color){
 
 # call functions
 # Picea
-svg('Results/PiceaIndividual.svg', 
+svg('Results/TimeSeries/PiceaIndividual.svg', 
     width = 10,
     height = 12,
     pointsize = 30)
@@ -101,7 +104,7 @@ indiv.plot(pollen$PiceaMin, "springgreen3")
 dev.off()
 
 # Populus
-svg('Results/PopulusIndividual.svg', 
+svg('Results/TimeSeries/PopulusIndividual.svg', 
     width = 10,
     height = 12,
     pointsize = 30)
@@ -315,7 +318,7 @@ spatialMonteCarlo <- function(distance_travelled, result, nit) {
     if (testResult$p.value < 0.05) {
       
       # Check whether test correlation is better than actual correlation
-      if (testResult$estimate > result$estimate) {
+      if (testResult$estimate >= result$estimate) {
         
         # Add to counter
         it <- it + 1
@@ -327,7 +330,7 @@ spatialMonteCarlo <- function(distance_travelled, result, nit) {
   success <- it / nit
   success
 }
-spatialMonteCarlo(distance_travelled = distance_travelled, result = result, nit = 10000)
+spatialMonteCarlo(distance_travelled = distance_travelled, result = result, nit = 100000)
 
 ############################################################################################
 ############################################################################################
