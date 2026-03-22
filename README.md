@@ -18,7 +18,8 @@ following R packages are required to execute the code:
 * `Bchron` 
 * `dplyr` 
 * `gganimate` 
-* `ggplot2` 
+* `ggplot2`
+* `ggtext`
 * `gifski` 
 * `neotoma2` 
 * `raster` 
