@@ -43,7 +43,7 @@ temporary files).
 * refugia-id.Rproj - R project file to organize repository.
 
 Three `R` scripts are also included in the root of the repository to execute various parts of the analysis: 
-* time-calibration.R - A script for pulling geochrnologies and pollen data from Neotoma database,
+* time-calibration.R - A script for pulling geochronologies and pollen data from Neotoma database,
 performing the necessary time calibrations, and organizing the data in a way that is useful for the analysis. 
 * animations.R - A script to create the animated heat maps and stills necessary seen in Fig. 4 and
 Supplementary Figs. 1 and 2. 
