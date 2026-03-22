@@ -3,6 +3,7 @@ library("dplyr")
 library("tidyr")
 library("ggplot2")
 library("gganimate")
+library("ggtext")
 library("gifski")
 library("sf")
 library("rnaturalearth")
@@ -20,7 +21,7 @@ PiceaMin <- read.csv("IndividualSummaries/PiceaMin.csv", check.names = FALSE)
 #################################################################################
 
 # create function to generate animations and download them as GIFs in the Results folder
-generateGIF <- function(mapdata_name) {
+generateGIF <- function(mapdata_name, taxon) {
   
   # get data from global environment corresponding to name called in function
   mapdata <- get(mapdata_name)
@@ -121,8 +122,9 @@ generateGIF <- function(mapdata_name) {
   # animate the map through time
   map_with_animation <- map_with_data +
     transition_time(-time) +
-    ggtitle('Year: {frame_time}',
-            subtitle = 'Frame {frame} of {nframes}')
+    ggtitle(taxon,
+            subtitle = "Year: {frame_time}") +
+    theme(plot.title = ggtext::element_markdown())
   num_years <- length(time_cols)
   
   # save animation to Results folder
@@ -138,9 +140,9 @@ generateGIF <- function(mapdata_name) {
 dir.create("Results/Videos")
 
 # generate animations and save them to Results folder as gifs
-generateGIF("SalixMin")
-generateGIF("PopulusMin")
-generateGIF("PiceaMin")
+generateGIF("SalixMin", "*Salix*")
+generateGIF("PopulusMin", "*Populus*")
+generateGIF("PiceaMin", "*Picea*")
 
 #################################################################################
 #################################################################################
