@@ -1,14 +1,14 @@
 # Overview
 
-This data and code repository is supplemental to the manuscript "Ice age
-refugium shows potential for geohistorical data to guide modern
-conservation efforts" currently under review at *Communications Earth &
-Environment*. All data files were pulled from the Neotoma database using
-scripts contained herein. Geochronologic controls were pulled on January
-12, 2025, and pollen data were last pulled on January 1, 2026.
+This data and code repository is supplemental to the manuscript:
+
+Morley, N.E.D., Schneider, C.L., Cahill, J.F. et al. Geohistorical data reveal 
+an ice age refugium with implications for modern conservation. Commun Earth 
+Environ (2026). https://doi.org/10.1038/s43247-026-03563-3
 
 All code is self-contained and does not require additional materials from
-outside of this repository.
+outside of this repository. Geochronologic controls were pulled from the Neotoma database on January
+12, 2025, and pollen data were last pulled from the Neotoma database on January 1, 2026.
 
 
 # Software Requirements
@@ -19,10 +19,12 @@ following R packages are required to execute the code:
 * `dplyr` 
 * `gganimate` 
 * `ggplot2`
+* `ggpubr`
 * `ggtext`
 * `gifski` 
 * `neotoma2` 
-* `raster` 
+* `raster`
+* `readr`
 * `rnaturalearth` 
 * `rnaturalearthdata` 
 * `sf` 
@@ -42,13 +44,15 @@ Three files are included in the root of the repository to help with organization
 temporary files). 
 * refugia-id.Rproj - R project file to organize repository.
 
-Three `R` scripts are also included in the root of the repository to execute various parts of the analysis: 
+Four `R` scripts are also included in the root of the repository to execute various parts of the analysis: 
 * time-calibration.R - A script for pulling geochronologies and pollen data from Neotoma database,
 performing the necessary time calibrations, and organizing the data in a way that is useful for the analysis. 
 * animations.R - A script to create the animated heat maps and stills necessary seen in Fig. 4 and
 Supplementary Figs. 1 and 2. 
 * regional-analytics.R - A script for the remaining analyses, including the temporal and spatial Monte Carlo
 analysis, time series shown in Figs. 3-4 and Supplementary Figs. 1-2, and correlations between minimum and maximum sampling protocols.
+* pollen-abundance-check.R – A script for checking pollen spectra of refugium with weak chronology to adjacent localities with stronger 
+chronologies.
 
 The *TempFiles* folder contains temporary files that should be reserved for analysis in later scripts.
 
@@ -57,7 +61,8 @@ and maximum sample protocols (see Methods of manuscript for details).
 
 The *Results* folder contains results needed for figures. These include the Picea stills that are used in 
 Fig. 4, the Populus stills needed for Supplementary Figs. 1 and 2, the time series used in Figs. 3-4 and Supplementary Figs. 1-2,
-and the animated heat maps used in Supplementary Videos 1-3. Note that any statistical outputs will be entered in your console when running
+the pollen spectrum analysis used in Supplementary Fig. 3, and the animated heat maps used in Supplementary Videos 1-3. 
+Note that any statistical outputs will be entered in your console when running
 regional-analytics.R and were directly input into the manuscript.
 
 
