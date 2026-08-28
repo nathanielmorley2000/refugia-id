@@ -4,7 +4,7 @@ This data and code repository is supplemental to the manuscript:
 
 Morley, N.E.D., Schneider, C.L., Cahill, J.F. et al. Geohistorical data reveal 
 an ice age refugium with implications for modern conservation. Commun Earth 
-Environ (2026). https://doi.org/10.1038/s43247-026-03563-3
+Environ **7**, 704 (2026). https://doi.org/10.1038/s43247-026-03563-3
 
 All code is self-contained and does not require additional materials from
 outside of this repository. Geochronologic controls were pulled from the Neotoma database on January
